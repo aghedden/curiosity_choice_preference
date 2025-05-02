@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Trivia Screening Task</title>
+        <script src="jspsych/jspsych/jspsych.js"></script>
+        <script src="jspsych/jspsych/plugin-html-keyboard-response.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-likert.js"></script>
+        <script src="jspsych/jspsych/plugin-html-button-response.js"></script>
+        <script src="jspsych/jspsych/plugin-image-keyboard-response.js"></script>
+        <script src="jspsych/jspsych/plugin-preload.js"></script>
+        <script src="jspsych/jspsych/plugin-call-function.js"></script>
+        <script src="jspsych/jspsych/plugin-survey.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-html-form.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-multi-choice.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-multi-select.js"></script>  
+        <script src="jspsych/jspsych/plugin-survey-text.js"></script>    
+        <script src="jspsych/jspsych/plugin-fullscreen.js"></script>
+        <link href="jspsych/jspsych/jspsych.css" rel="stylesheet" type="text/css"/>
+        <style>
+            .content-container {
+                width: 900px;  /* You can adjust this width */
+                margin: 0 auto;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body></body>
+    <script>
+
+        // // Set style preferences (when implementing into cognition.Run, where the above code is not needed, insert the following to implement style preferences)
+        // (function() {
+        // // add style as soon as the script runs
+        // const styleElement = document.createElement('style');
+        // styleElement.textContent = `
+        //     .content-container {
+        //         width: 900px !important;
+        //         margin: 0 auto !important;
+        //         text-align: center !important;
+        //     }
+        //     // also target the jsPsych display element directly 
+        //     #jspsych-display {
+        //         width: 900px !important;
+        //         margin: 0 auto !important;
+        //         text-align: center !important;
+        //     }
+        // `;
+        // document.head.appendChild(styleElement);
+        // })();
+
+        //INITIALIZATION
+        // initialize jsPsych
+        var jsPsych = initJsPsych({
+            on_finish: function() {
+            },
+            // record a timestamp at the beginning of each trial
+            on_trial_start: function() {
+                const currentTime = new Date();
+                jsPsych.data.addDataToLastTrial({
+                    date: currentTime.toLocaleDateString(),
+                    time: currentTime.toLocaleTimeString(),
+                    timestamp: currentTime.getTime()
+                });
+            },
+            // add timestamps to data
+            on_data_update: function(data) {
+                // Add date and time to each trial
+                const currentTime = new Date();
+                data.date = currentTime.toLocaleDateString();
+                data.time = currentTime.toLocaleTimeString();
+                data.timestamp = currentTime.getTime(); // milliseconds since January 1, 1970
+            }
+        });
+
+        ///////// DEFINE GLOBAL VARIABLES AND FUNCTIONS
+        // generate random completion code
+        function generateCompletionCode() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return code;
+        }
+        const completion_code = generateCompletionCode();
+
+        // create expiring password to ensure participants complete part 2 at the appropriate time (Sam Rosenthal's method: https://github.com/srosenthalUofC/Expiring-Password)
+        // text = "triviafun"
+        // delayTime = 1440 (aka a delay time of 1440 minutes, or 24 hours). the delayWindow (grace period) is coded in Part 2
+        function generatePassword(text, delayTime) { 
+            //first parameter is the "word" part of the password. Can be different per participant but ALL MUST BE SAME LENGTH. Second parameter is delay time expressed in minutes)
+            var currentdate = new Date(); //create new date object
+            const monthTable = [0,31,28,31,30,31,30,31,31,30,31,30]; //no way in standard Javascript to get number of days elapsed since beginning of year, this is a workaround
+            var numDays = 0;
+            
+            for (let i = 0; i < (currentdate.getUTCMonth()+1); i++) {
+                numDays = (numDays + monthTable[i])  //get number of days elapsed since Jan 1, excluding current month
+            }
+            
+            numDays = numDays + currentdate.getUTCDate(); //add days of current month
+            var currentMin = currentdate.getUTCMinutes() + (currentdate.getUTCHours()*60) + (numDays*1440) + parseInt(delayTime); // 1440 here is just for the time conversion, saying that there are 1440 minutes/day
+            //previous line calculated as current minutes since beginning of current hour + current minutes since midnight before current hour + current mins since Jan 1 before current day + delay time
+            return text + currentMin; 
+        }
+
+        // Initialize timeline
+        var timeline = [];
+
+        // Global counters for curiosity counts
+        var high_cur_count = 0;
+        var low_cur_count = 0;
+
+        // Set target counts (set to 48 for the full experiment)
+        var target_count = 48;
+
+        // Initialize selected questions
+        var selected_questions = [];
+
+        //// LOAD IN ALL DATA
+        // Define practice question data together since it does not vary from participant-to-participant
+        const practice_trials = [
+            {
+                question: "What US city is nicknamed the \"Crossroads of the West\"?",
+                answer: "Salt Lake City",
+                image: "novel002.jpg"
+            },
+            {
+                question: "In the TV show \"The Simpsons\", what is Milhouse's last name?",
+                answer: "Van Houten",
+                image: "novel008.jpg"
+            },
+            {
+                question: "What year did construction of the St. Paul's Cathedral in London, England start?",
+                answer: "1675",
+                image: "novel201.jpg"
+            },
+            {
+                question: "What do you call a group of skunks?",
+                answer: "A surfeit",
+                image: "novel023.jpg"
+            }
+        ];
+
+        // Define practice images separately for easy access
+        const practice_images = [
+            "novel002.jpg",
+            "novel008.jpg",
+            "novel201.jpg",
+            "novel023.jpg"
+        ];
+
+        // Load in all 243 trivia questions
+        // Trivia questions from the question bank generated by Fastrich and colleagues (2017), aside from the exclusion of 1 question 
+        const all_trivia_questions = [
+            { "question": "What is the best selling music album of all time? ", "answer": "Thriller" },
+            { "question": "Which country has a national anthem that consists of only 32 syllables?", "answer": "Japan" },
+            { "question": "Which planet in the solar system is the only one that rotates clockwise?", "answer": "Venus" },
+            { "question": "Which product, after oil, is the most frequently traded product around the world?", "answer": "Coffee" },
+            { "question": "Which country has the world's only non-quadrilateral national flag?", "answer": "Nepal" },
+            { "question": "What is the country with the highest population density?", "answer": "Monaco" },
+            { "question": "Which fish can produce more eggs than any other known vertebrate?", "answer": "Sunfish" },
+            { "question": "What disability did Thomas Edison suffer from?", "answer": "Deafness" },
+            { "question": "What breed of dog is the only animal whose evidence is admissible in some USA courts?", "answer": "Bloodhound" },
+            { "question": "What Beatles song remained the longest on the music charts?", "answer": "Hey Jude" },
+            { "question": "What is the only lizard that has a voice?", "answer": "Gecko" },
+            { "question": "Which chemical element belongs in the Halogen Family with fluorine, chlorine, bromine and astatine?", "answer": "Iodine" },        
+            { "question": "What island country lies off the south-east coast of India?", "answer": "Sri Lanka" },
+            { "question": "What is the longest river in Asia?", "answer": "Yangtze" },
+            { "question": "What is the monetary unit in Korea?", "answer": "Won" },
+            { "question": "What is the name of the artist who painted the 'Tahitian Women on the Beach'?", "answer": "Paul Gauguin" },
+            { "question": "What is Spain's national flower?", "answer": "Carnation" },
+            { "question": "In which country is Angel Falls, the tallest waterfall, located?", "answer": "Venezuela" },
+            { "question": "What is the largest temple in Egypt?", "answer": "Karnak" },
+            { "question": "In which country is the temple of 'Angkor Wat' located?", "answer": "Cambodia" },
+            { "question": "What is the abbreviated name of the political and economic integration in Southeast Asia?", "answer": "ASEAN" },
+            { "question": "What is the largest freshwater lake in the world by surface area?", "answer": "Lake Superior" },
+            { "question": "Which popular Greek philosopher is said to have tutored Alexander the Great?", "answer": "Aristotle" },
+            { "question": "What color are cranberries before they turn red?", "answer": "White" },
+            { "question": "Which company is the largest manufacturer of tires?", "answer": "LEGO" },
+            { "question": "In which country is the city Marrakesh located?", "answer": "Morocco" },
+            { "question": "Which Australian state was formerly known as Van Diemen's Land?", "answer": "Tasmania" },
+            { "question": "What insulates the ice cream to prevent it from melting in the hot dish 'Baked Alaska'?", "answer": "Meringue" },
+            { "question": "What body of water does the Danube River flow into?", "answer": "Black Sea" },
+            { "question": "Which Disney cartoon character's love interest is named Faline?", "answer": "Bambi" },
+            { "question": "What was the original Dutch name of New York City?", "answer": "New Amsterdam" },
+            { "question": "What purpose did the Coliseum serve when first built?", "answer": "Amphitheatre" },
+            { "question": "What is the largest bear on earth?", "answer": "Polar Bear" },
+            { "question": "What is added to white sugar to make brown sugar?", "answer": "Molasses" },
+            { "question": "What fiber-producing plant is attacked by the boll weevil?", "answer": "Cotton" },
+            { "question": "What is the name of Beethoven's only opera?", "answer": "Fidelio" },
+            { "question": "What is the largest known animal to have ever existed?", "answer": "Blue Whale" },
+            { "question": "In which city would you find the Hermitage art gallery?", "answer": "Saint Petersburg" },
+            { "question": "Which country has the longest coastline?", "answer": "Canada" },
+            { "question": "What is the last name of the cosmonaut who first orbited around the Earth?", "answer": "Gagarin" },
+            { "question": "What is the name of the smallest state surrounded by Italy other than Vatican City?", "answer": "San Marino" },
+            { "question": "What Spanish city is the capital of Catalonia?", "answer": "Barcelona" },
+            { "question": "What does an ichthyologist study?", "answer": "Fish" },
+            { "question": "What is the name of the company that produces 'Baby Ruth' candy bars?", "answer": "Nestle" },
+            { "question": "In which European city is the Parthenon located?", "answer": "Athens" },
+            { "question": "What is the last name of the man who first studied genetic inheritance in plants?", "answer": "Mendel" },
+            { "question": "What was the name of the zeppelin that exploded in Lakehurst N.J. in 1937?", "answer": "Hindenburg" },
+            { "question": "What is the name of the palace built in France by King Louis XIV?", "answer": "Versailles" },
+            { "question": "In what ancient city were the 'Hanging Gardens' located?", "answer": "Babylon" },
+            { "question": "What is the capital city of Australia?", "answer": "Canberra" },
+            { "question": "What is the name of the ship on which Charles Darwin made his scientific voyage?", "answer": "HMS Beagle" },
+            { "question": "What is the name of the fountain in Rome into which coins are thrown in for good luck?", "answer": "Trevi" },
+            { "question": "In which city is Michelangelo's statue of David located?", "answer": "Florence" },
+            { "question": "Of which country is Nairobi the capital?", "answer": "Kenya" },
+            { "question": "What is the last name of the first person to complete a solo flight across the Atlantic Ocean?", "answer": "Lindbergh" },
+            { "question": "What is the name of the Roman emperor who played the fiddle while Rome burned?", "answer": "Nero" },
+            { "question": "What is the last name of the scientist who discovered radium?", "answer": "Curie" },
+            { "question": "What was the last piece of music Mozart composed?", "answer": "Requiem" },
+            { "question": "What is the last name of the author of the James Bond novels?", "answer": "Fleming" },
+            { "question": "What was the name of the Apollo lunar module that landed the first man on the moon?", "answer": "Eagle" },
+            { "question": "What was the name of the goldfish in the story of Pinocchio?", "answer": "Cleo" },
+            { "question": "What is the name of the submarine in Jules Verne's '20,000 Leagues Beneath the Sea'?", "answer": "Nautilus" },
+            { "question": "What is the last name of the European author who wrote 'The Trial'?", "answer": "Kafka" },
+            { "question": "What is the last name of the poet who originally wrote 'Don Juan'?", "answer": "Byron" },
+            { "question": "Who was the first ruler of the Holy Roman Empire?", "answer": "Charlemagne" },
+            { "question": "What is the name of the brightest star in the sky, excluding the sun?", "answer": "Sirius" },
+            { "question": "What is the name of Germany's largest battleship that was sunk in World War II?", "answer": "Bismarck" },
+            { "question": "What is the name of the mountain range that separates Asia from Europe?", "answer": "Ural" },
+            { "question": "What is the name of the instrument used to measure wind speed?", "answer": "Anemometer" },
+            { "question": "Which planet in our solar system was the last to be discovered?", "answer": "Neptune" },
+            { "question": "Which sport uses the terms 'stones' and 'brooms'?", "answer": "Curling" },
+            { "question": "What is the name of the unit of measure that refers to a six-foot depth of water?", "answer": "Fathom" },
+            { "question": "Who is known as 'the father of geometry'?", "answer": "Euclid" },
+            { "question": "What is the name of the largest desert on earth?", "answer": "Antarctica" },
+            { "question": "What flavor is the extract of fermented and dried pods of several species of orchids?", "answer": "Vanilla" },
+            { "question": "Which is the only continent without a desert?", "answer": "Europe" },
+            { "question": "Where is the largest Volcano on Earth located?", "answer": "Hawaii" },
+            { "question": "What animal's milk does not curdle?", "answer": "Camel" },
+            { "question": "What wild animal in Africa has killed the most people?", "answer": "Hippo" },
+            { "question": "What is the only domestic animal not mentioned in the Bible?", "answer": "Cat" },
+            { "question": "What spice is extremely poisonous if injected intravenously?", "answer": "Nutmeg" },
+            { "question": "Who was the first winner of the Fifa World Cup?", "answer": "Uruguay" },
+            { "question": "What animal can eat only when its head is upside down?", "answer": "Flamingo" },
+            { "question": "Which bird is the international symbol of happiness?", "answer": "Bluebird" },
+            { "question": "Which is the largest joint in the body?", "answer": "Knee" },
+            { "question": "What was once called brimstone?", "answer": "Sulfur" },
+            { "question": "Ankara is the capital city of which country?", "answer": "Turkey" },
+            { "question": "In which country are the ruins of the City of Carthage situated?", "answer": "Tunisia" },
+            { "question": "What is the only food that never spoils?", "answer": "Honey" },
+            { "question": "In food, E330 is better known by what name?", "answer": "Citric acid" },
+            { "question": "What did Joseph Priestley discover in 1774?", "answer": "Oxygen" },
+            { "question": "Who is the Greek God of music?", "answer": "Apollo" },
+            { "question": "What is the name of the largest island in the world?", "answer": "Greenland" },
+            { "question": "Which fruit was previously known as a Chinese gooseberry?", "answer": "Kiwi" },
+            { "question": "What is the correct term for a female elephant?", "answer": "Cow" },
+            { "question": "What color is octopus' blood?", "answer": "Blue" },
+            { "question": "What is a baby oyster called?", "answer": "Spat" },
+            { "question": "Where in the body are male lobsters bladders located?", "answer": "Head" },
+            { "question": "In which city was the Titanic built?", "answer": "Belfast" },
+            { "question": "What is the most common blood type in humans?", "answer": "O positive" },
+            { "question": "What was the first internal human organ to be successfully transplanted?", "answer": "Kidney" },
+            { "question": "Which poisonous snake secretes an odor like cucumbers?", "answer": "Copperhead Snake" },
+            { "question": "What does the Scoville scale of food measure?", "answer": "Spicy Heat" },
+            { "question": "Which land mammal has the highest blood pressure?", "answer": "Giraffe" },
+            { "question": "What was the first nation to give women the right to vote?", "answer": "New Zealand" },
+            { "question": "What is the name of the biggest constellation in the sky?", "answer": "Hydra" },
+            { "question": "What is the longest common English noun without any vowels?", "answer": "Rhythm" },
+            { "question": "What musical note do most American car horns beep in?", "answer": "F" },
+            { "question": "Who was the first Christian emperor of Rome?", "answer": "Constantine" },
+            { "question": "The Gold Coast is now known as what country?", "answer": "Ghana" },
+            { "question": "What is the only country in the world that has a bible on its flag?", "answer": "Dominican Republic" },
+            { "question": "What trade was Greek philosopher Socrates trained for?", "answer": "Stonecutting" },
+            { "question": "What reptile, according to ancient legend, was able to live in fire?", "answer": "Salamander" },
+            { "question": "What unit of measurement is used for fuel wood?", "answer": "Cord" },
+            { "question": "What did the D in DC comics originally stand for?", "answer": "Detective" },
+            { "question": "What is the most abundant gas in the atmosphere?", "answer": "Nitrogen" },
+            { "question": "Which country is the world's biggest producer of olive oil?", "answer": "Spain" },
+            { "question": "Which animal has the shortest lifespan?", "answer": "Mayfly" },
+            { "question": "What is the only fish that can blink with both eyes?", "answer": "Shark" },
+            { "question": "What is the fastest creature on two legs?", "answer": "Ostrich" },
+            { "question": "What is the more common name of the plant Hedera?", "answer": "Ivy" },
+            { "question": "What is the last letter of the Greek alphabet?", "answer": "Omega" },
+            { "question": "What is the only internal human organ capable of natural regeneration of lost tissue?", "answer": "Liver" },
+            { "question": "Which city is the only one in the world to be situated in two continents?", "answer": "Istanbul" },
+            { "question": "Disney's Lion King movie/musical is generally said to be based on what Shakespeare play?", "answer": "Hamlet" },
+            { "question": "Where in the world is the world's largest building (the Burj Khalifa) located?", "answer": "Dubai" },
+            { "question": "The hot condiment wasabi is generally from what part of the plant?", "answer": "Root" },
+            { "question": "What language has the largest vocabulary?", "answer": "English" },
+            { "question": "What color flag was historically first displayed to indicate sickness aboard a ship?", "answer": "Yellow" },
+            { "question": "Which famous religious leader is depicted in the largest statue in the world?", "answer": "Buddha" },
+            { "question": "Until 2008, what country was the only one to display a map of their country on their flag?", "answer": "Cyprus" },
+            { "question": "What is an ice hockey puck made from?", "answer": "Rubber" },
+            { "question": "Which animal tastes with its feet?", "answer": "Butterfly" },
+            { "question": "What color is vermilion a shade of?", "answer": "Red" },
+            { "question": "Broccoli belongs to what family of plants?", "answer": "Cabbage" },
+            { "question": "What is the National Bird of India?", "answer": "Peacock" },
+            { "question": "Where on the human body is the skin the thinnest?", "answer": "Eye" },
+            { "question": "What was the first country to leave the United Nations?", "answer": "Indonesia" },
+            { "question": "Which animal sleeps with one eye open?", "answer": "Dolphin" },
+            { "question": "73% of what country is covered by forest?", "answer": "Finland" },
+            { "question": "Scooby Doo is based on what breed of dog?", "answer": "Great Dane" },
+            { "question": "What is measured with an ombrometer?", "answer": "Rainfall" },
+            { "question": "The linden tree is more commonly known as what?", "answer": "Lime Tree" },
+            { "question": "Viticulture is the growing of what plant?", "answer": "Grapes" },
+            { "question": "What food did the Aztecs reckon was the food of the Gods?", "answer": "Chocolate" },
+            { "question": "What bird has the most feathers per square inch?", "answer": "Penguin" },
+            { "question": "What country is coffee originally from?", "answer": "Ethiopia" },
+            { "question": "In which ocean are the Canary Islands located?", "answer": "Atlantic" },
+            { "question": "Which city was the first in the world to have a public bus service?", "answer": "Paris" },
+            { "question": "What is the world's fifth largest religion?", "answer": "Sikhism" },
+            { "question": "At the end of what period did dinosaurs become extinct on earth?", "answer": "Cretaceous" },
+            { "question": "What was the first planet to be discovered by telescope?", "answer": "Uranus" },
+            { "question": "What nationality was Picasso?", "answer": "Spanish" },
+            { "question": "What is the highest range of the male singing voice?", "answer": "Countertenor" },
+            { "question": "What type of acid is used in car batteries?", "answer": "Sulfuric" },
+            { "question": "What is the color of mourning in Turkey?", "answer": "Violet" },
+            { "question": "Which islands wildlife is 90% unique?", "answer": "Madagascar" },
+            { "question": "Where in the body would you find the pisiform bone?", "answer": "Wrist" },
+            { "question": "What color are Amazon river dolphins?", "answer": "Pink" },
+            { "question": "What dog breed has the best eyesight?", "answer": "Greyhound" },
+            { "question": "Barajas is the main airport in what city?", "answer": "Madrid" },
+            { "question": "What Polish political movement got the support of Pope John Paul II in the 1980's", "answer": "Solidarity" },
+            { "question": "What was the surname of the leader who said 'Never before have we had so little time in which to do so much'?", "answer": "Roosevelt" },
+            { "question": "What was the surname of the first democratically elected president of Russia?", "answer": "Yeltsin" },
+            { "question": "The forint is the monetary unit of what central European country?", "answer": "Hungary" },
+            { "question": "In what century was Leonardo da Vinci born?", "answer": "15th" },
+            { "question": "What is the name of the composer who wrote Don Giovanni?", "answer": "Mozart" },
+            { "question": "Along with chitin, what strengthens the exoskeleton of bugs?", "answer": "Calcium" },
+            { "question": "What do birds rely on to swallow?", "answer": "Gravity" },
+            { "question": "What animal is the 'Turdus migratorius' better known as?", "answer": "American Robin" },
+            { "question": "What radioactive element is extracted from carnotite and pitchblende?", "answer": "Uranium" },
+            { "question": "Who was the first physician to record case histories of patients?", "answer": "Hippocrates" },
+            { "question": "Copper and what else are the two main constituents of bronze?", "answer": "Tin" },
+            { "question": "What body part is low-density lipoprotein most likely to clog?", "answer": "Arteries" },
+            { "question": "What are you shopping for if you're sized up by a Brannock Device?", "answer": "Shoes" },
+            { "question": "What chemical compound comes from the Greek word for 'primary'?", "answer": "Protein" },
+            { "question": "Hydrogen and what are thought to be the primary elements of which Jupiter is composed?", "answer": "Helium" },
+            { "question": "What was the name of the first probe to send back pictures from Mars?", "answer": "Viking" },
+            { "question": "Yapping Deng was a world champion in which sport?", "answer": "Table Tennis" },
+            { "question": "Coconut and what other fruit were Hawaiian women once forbidden by law to eat?", "answer": "Banana" },
+            { "question": "From what vegetable were jack-o-lanterns originally carved?", "answer": "Turnips" },
+            { "question": "What was the first war in which one jet plane shot down another?", "answer": "Korean War" },
+            { "question": "What nation started giving gas masks to its citizens before the Persian Gulf War?", "answer": "Israel" },
+            { "question": "What was the surname of the first president to appear on a U.S coin?", "answer": "Lincoln" },
+            { "question": "What food is the leading source of salmonella poisoning?", "answer": "Chicken" },
+            { "question": "What is the second largest island in Europe?", "answer": "Iceland" },
+            { "question": "What was the poison used at Socrates' execution?", "answer": "Hemlock" },
+            { "question": "Who was first to publish the theory that the Earth revolves around the sun?", "answer": "Copernicus" },
+            { "question": "What studio did the Beatles use to record 191 songs?", "answer": "Abbey Road" },
+            { "question": "What elemental event rejuvenates a prairie, causing more plants to grow taller, flower and produce seed?", "answer": "Fire" },
+            { "question": "What is the longest venomous snake?", "answer": "King Cobra" },
+            { "question": "What common insect depends the most on sight, rather than sound, to locate mates?", "answer": "Firefly" },
+            { "question": "What taste are cats unable to detect?", "answer": "Sweet" },
+            { "question": "Christopher Columbus introduced what animal to North America?", "answer": "Pig" },
+            { "question": "What sea creature can have an eye measuring 16 inches, the largest in the animal kingdom?", "answer": "Squid" },
+            { "question": "What was the first bird domesticated by man?", "answer": "Goose" },
+            { "question": "The title of what animal literally means 'Terrible lizard'?", "answer": "Dinosaur" },
+            { "question": "In what century did mathematicians first use plus and minus signs?", "answer": "16th" },
+            { "question": "What unit of measure was once defined as the length of 3 grains of barley laid end to end?", "answer": "Inch" },
+            { "question": "What direction did cartographers usually place at the top of maps when they believed the Earth was flat?", "answer": "East" },
+            { "question": "The element Manganese gives what crystal its famous violet color?", "answer": "Amethyst" },
+            { "question": "What were thermometers filled with in the 17th century, before mercury?", "answer": "Alcohol" },
+            { "question": "What is the only living part of the human body that has no blood supply?", "answer": "Cornea" },
+            { "question": "What illegal hallucinogen naturally occurs in many plants and mammals including humans?", "answer": "DMT" },
+            { "question": "What was the name of the first chimpanzee sent into space by America?", "answer": "Ham" },
+            { "question": "Which planet has a hexagon shaped cloud formation on its north pole?", 'answer': "Saturn" },
+            { "question": "Neptune gets its blue color from what gas?", "answer": "Methane" },
+            { "question": "What is the only country to have won at least one gold in every Olympic Games?", "answer": "Great Britain" },
+            { "question": "What kind of fruit basket was used for the first game of basketball?", "answer": "Peach" },
+            { "question": "What is the proper name of a badminton bird?", "answer": "Shuttlecock" },
+            { "question": "South America first saw the cultivation of what vegetable in 200 A.D.?", "answer": "Potato" },
+            { "question": "Which animal's milk is used to make authentic Italian mozzarella cheese?", "answer": "Water Buffalo" },
+            { "question": "What added ingredient keeps confectioners' sugar from clumping?", "answer": "Cornstarch" },
+            { "question": "What flavor is the liqueur Cointreau?", "answer": "Orange" },
+            { "question": "What type of fruit would you pick from a Mirabelle tree?", "answer": "Plum" },
+            { "question": "Calvados is brandy made from which fruit?", "answer": "Apple" },
+            { "question": "Which drink gets its name from a town on the Red Sea coast of Yemen?", "answer": "Mocha" },
+            { "question": "What food product did Hippolyte Mege-Mouries invent by treating oils with hydrogen?", "answer": "Margarine" },
+            { "question": "On what vegetable did an ancient Egyptian place his right hand when taking an oath?", "answer": "Onion" },
+            { "question": "What is the only country with a national dog?", "answer": "Netherlands" },
+            { "question": "What is the side of a hammer called?", "answer": "Cheek" },
+            { "question": "What is the term for rainforests higher than 3000 feet above sea level?", "answer": "Cloud forests" },
+            { "question": "What is the only breed of dog that can get gout?", "answer": "Dalmatian" },
+            { "question": "What is the world's smallest mammal?", "answer": "Bumblebee Bat" },
+            { "question": "What is the only cat in the world that cannot retract its claws completely?", "answer": "Cheetah" },
+            { "question": "What was the world's first National Park?", "answer": "Yellowstone" },
+            { "question": "What is the only mammal native to Iceland?", "answer": "Arctic Fox" },
+            { "question": "What type of spider wasp eats tarantulas?", "answer": "Tarantula Hawk" },
+            { "question": "What is a group of goats called?", "answer": "Trip" },
+            { "question": "What is the only rock that floats in water?", "answer": "Pumice" },
+            { "question": "What gland makes hormones that trigger puberty?", "answer": "Pituitary" },
+            { "question": "What part of a cola tree is used to flavor beverages?", "answer": "Nuts" },
+            { "question": "Which member of the ginger family is used to color curries?", "answer": "Turmeric" },
+            { "question": "Ingesting large amounts of what type of unripe berry can cause moderate hallucinations?", "answer": "Mulberry" },
+            { "question": "What type of animal was the Snickers candy bar named after?", "answer": "Horse" },
+            { "question": "What type of bean must be cooked thoroughly for all the cyanide to be extracted?", "answer": "Lima bean" },
+            { "question": "The liquid found in what fruit can be used as a substitute for blood plasma in emergencies?", "answer": "Coconut" },
+            { "question": "What American State has the highest percentage of people who walk to work?", "answer": "Alaska" },
+            { "question": "What is the surname of the former Soviet Russian leader who endorsed Louis Vuitton and Pizza Hut?", "answer": "Gorbachev" },
+            { "question": "What animal's antlers are the fastest growing animal cells in nature?", "answer": "Moose" },
+            { "question": "What water-dwelling creature can make a sound loud enough to break glass?", "answer": "Pistol Shrimp" },
+            { "question": "What is the only animal that can turn its stomach inside out?", "answer": "Starfish" },
+            { "question": "What is the fastest healing body part on a human?", "answer": "Tongue" }
+        ]
+
+        // Load in all 200 novel images
+        // Novel images generated as a part of the IMAGINE Dataset, a set of 400 perceptually novel objects (Cooper et al., 2023)
+        // Middle 50% of images in terms of appeal and interest ratings collected by Cooper and colleagues (2023) were used
+        const all_novel_images = [
+            'novel139.jpg',
+            'novel105.jpg',
+            'novel059.jpg',
+            'novel071.jpg',
+            'novel273.jpg',
+            'novel266.jpg',
+            'novel272.jpg',
+            'novel064.jpg',
+            'novel058.jpg',
+            'novel104.jpg',
+            'novel138.jpg',
+            'novel312.jpg',
+            'novel338.jpg',
+            'novel310.jpg',
+            'novel106.jpg',
+            'novel264.jpg',
+            'novel270.jpg',
+            'novel271.jpg',
+            'novel265.jpg',
+            'novel073.jpg',
+            'novel067.jpg',
+            'novel098.jpg',
+            'novel107.jpg',
+            'novel305.jpg',
+            'novel339.jpg',
+            'novel103.jpg',
+            'novel088.jpg',
+            'novel077.jpg',
+            'novel275.jpg',
+            'novel260.jpg',
+            'novel076.jpg',
+            'novel102.jpg',
+            'novel328.jpg',
+            'novel316.jpg',
+            'novel276.jpg',
+            'novel262.jpg',
+            'novel263.jpg',
+            'novel288.jpg',
+            'novel049.jpg',
+            'novel075.jpg',
+            'novel129.jpg',
+            'novel115.jpg',
+            'novel317.jpg',
+            'novel303.jpg',
+            'novel358.jpg',
+            'novel370.jpg',
+            'novel199.jpg',
+            'novel166.jpg',
+            'novel172.jpg',
+            'novel238.jpg',
+            'novel210.jpg',
+            'novel205.jpg',
+            'novel239.jpg',
+            'novel013.jpg',
+            'novel173.jpg',
+            'novel198.jpg',
+            'novel371.jpg',
+            'novel359.jpg',
+            'novel367.jpg',
+            'novel171.jpg',
+            'novel005.jpg',
+            'novel011.jpg',
+            'novel207.jpg',
+            'novel213.jpg',
+            'novel010.jpg',
+            'novel004.jpg',
+            'novel164.jpg',
+            'novel376.jpg',
+            'novel174.jpg',
+            'novel160.jpg',
+            'novel014.jpg',
+            'novel202.jpg',
+            'novel216.jpg',
+            'novel217.jpg',
+            'novel203.jpg',
+            'novel015.jpg',
+            'novel001.jpg',
+            'novel149.jpg',
+            'novel161.jpg',
+            'novel363.jpg',
+            'novel377.jpg',
+            'novel388.jpg',
+            'novel361.jpg',
+            'novel188.jpg',
+            'novel163.jpg',
+            'novel017.jpg',
+            'novel003.jpg',
+            'novel215.jpg',
+            'novel229.jpg',
+            'novel228.jpg',
+            'novel176.jpg',
+            'novel189.jpg',
+            'novel374.jpg',
+            'novel379.jpg',
+            'novel345.jpg',
+            'novel351.jpg',
+            'novel190.jpg',
+            'novel147.jpg',
+            'novel033.jpg',
+            'novel027.jpg',
+            'novel224.jpg',
+            'novel230.jpg',
+            'novel032.jpg',
+            'novel152.jpg',
+            'novel191.jpg',
+            'novel185.jpg',
+            'novel350.jpg',
+            'novel344.jpg',
+            'novel393.jpg',
+            'novel387.jpg',
+            'novel346.jpg',
+            'novel193.jpg',
+            'novel187.jpg',
+            'novel178.jpg',
+            'novel150.jpg',
+            'novel226.jpg',
+            'novel233.jpg',
+            'novel227.jpg',
+            'novel031.jpg',
+            'novel019.jpg',
+            'novel151.jpg',
+            'novel186.jpg',
+            'novel192.jpg',
+            'novel347.jpg',
+            'novel394.jpg',
+            'novel343.jpg',
+            'novel182.jpg',
+            'novel155.jpg',
+            'novel169.jpg',
+            'novel222.jpg',
+            'novel168.jpg',
+            'novel140.jpg',
+            'novel183.jpg',
+            'novel342.jpg',
+            'novel356.jpg',
+            'novel395.jpg',
+            'novel368.jpg',
+            'novel022.jpg',
+            'novel234.jpg',
+            'novel220.jpg',
+            'novel208.jpg',
+            'novel209.jpg',
+            'novel221.jpg',
+            'novel037.jpg',
+            'novel396.jpg',
+            'novel118.jpg',
+            'novel124.jpg',
+            'novel130.jpg',
+            'novel093.jpg',
+            'novel087.jpg',
+            'novel078.jpg',
+            'novel252.jpg',
+            'novel290.jpg',
+            'novel079.jpg',
+            'novel092.jpg',
+            'novel131.jpg',
+            'novel325.jpg',
+            'novel133.jpg',
+            'novel127.jpg',
+            'novel090.jpg',
+            'novel286.jpg',
+            'novel244.jpg',
+            'novel287.jpg',
+            'novel046.jpg',
+            'novel091.jpg',
+            'novel085.jpg',
+            'novel132.jpg',
+            'novel324.jpg',
+            'novel330.jpg',
+            'novel318.jpg',
+            'novel334.jpg',
+            'novel308.jpg',
+            'novel136.jpg',
+            'novel122.jpg',
+            'novel095.jpg',
+            'novel056.jpg',
+            'novel283.jpg',
+            'novel268.jpg',
+            'novel269.jpg',
+            'novel296.jpg',
+            'novel094.jpg',
+            'novel080.jpg',
+            'novel123.jpg',
+            'novel137.jpg',
+            'novel309.jpg',
+            'novel321.jpg',
+            'novel335.jpg',
+            'novel323.jpg',
+            'novel337.jpg',
+            'novel135.jpg',
+            'novel109.jpg',
+            'novel082.jpg',
+            'novel069.jpg',
+            'novel294.jpg',
+            'novel257.jpg',
+            'novel243.jpg',
+            'novel295.jpg',
+            'novel097.jpg',
+            'novel108.jpg',
+            'novel120.jpg'
+        ]
+
+        // Function to shuffle array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Scramble the trivia questions for this participant
+        var scrambled_trivia = shuffleArray([...all_trivia_questions]);
+
+        /// PASSWORD VERIFICATION AND PULLING IN SUBJECT-SPECIFIC DATA
+        // Function to validate the password format 
+        function validatePassword(input) {
+            // Ensure the password is exactly 12 characters and ends with subject ID
+            // Subject ID takes the form PIL/PNT/TST___ (e.g., PIL012, TST049, PNT120)
+            const regex = /^.{6}(PIL|TST|PNT)\d{3}$/; // Matches any string exactly 12 characters long ending with TST/PIL/PNT### (3 digits)
+            return regex.test(input);
+        }
+
+        // Variable to store whether the password is valid
+        let isPasswordValid = false;
+
+        // Enter subject ID (aka "password" to enter task)
+        const enter_subject_id = {
+            type: jsPsychSurveyText,
+            questions: [
+                {
+                    prompt: '<strong> IF YOU HAVE NOT ALREADY, PLEASE NOW SAVE YOUR STUDY USERNAME PROVIDED FOR PART 1. <br> YOU WILL NEED IT TO ENTER PART 2 OF THE STUDY AS WELL!</strong> <br><br> Please enter your unique study password again to begin Part 1 of the experiment<br> (this was included in your message/email with the study link when you accepted the study):',
+                    required: true
+                }
+            ],
+            on_finish: function(data) {
+                const fullInput = data.response.Q0;
+                
+                if (validatePassword(fullInput)) {
+                    const subject_id = fullInput.substring(6);
+                    jsPsych.data.addProperties({subject_id: subject_id});
+                    data.subject_id = subject_id;
+                    isPasswordValid = true;
+                } else {
+                    isPasswordValid = false;
+                    alert('Invalid password format. Please try again.');
+                }
+            }
+        };
+
+        // Password validation loop
+        const password_loop = {
+            timeline: [enter_subject_id],
+            loop_function: function() {
+                return !isPasswordValid;
+            }
+        };
+
+        // Add password validation to timeline first
+        timeline.push(password_loop);
+
+        // Enter fullscreen mode
+        timeline.push({
+            type: jsPsychFullscreen,
+            fullscreen_mode: true,
+            message: `
+                <div class="content-container">
+                    <p style="font-size: 20px;"><strong>
+                        It is very important that you complete this task in fullscreen mode.
+                    </strong></p>
+                    <p style="font-size: 20px;">
+                        The study will automatically exit fullscreen mode once this task 
+                        is complete.
+                    </p>
+                    <p style="font-size: 20px;">
+                        Click on the button below to enter fullscreen mode.
+                    </p>
+                </div>
+            `,
+            button_label: "Enter fullscreen"
+        });
+
+        // PART 1 (rating curiosity, selecting individual questions)
+            // Task details
+            var welcome = {
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;">Welcome to this experiment! There are <strong>2 parts</strong> to this experiment. You will complete the first part today, and you will complete the second part 24 hours from now. Please take note of the time now to know when to begin Part 2 tomorrow.<strong> If you are unable to complete the second part of the experiment 24 hours from now, please exit the experiment now.</strong></p>
+                        <br>
+                        <p style="font-size: 20px;"><strong>Bonus compensation</strong> will be awarded to participants who complete both study parts, today and tomorrow.</p>
+                        <br>
+                        <p style="font-size: 20px;">The study link for tomorrow's experiment part will <strong>only be available 24 hours from now</strong>. Failure to complete the task during this time tomorrow will prevent you from completing the experiment and earning bonus compensation. You will not be able to complete this study part at any other time in the future. </p>
+                        <br>
+                        <p style="font-size: 20px;">Press the button below to continue.</p>
+                    </div>
+                `,
+                choices: ['Continue'],
+                post_trial_gap: 300
+            };
+            timeline.push(welcome);
+
+            // Task details continued
+            var confirm_avail = {
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 30px;">Click <strong>"I am available in 24 hours to complete Part 2"</strong> below to proceed with the experiment</p>
+                        <br>
+                        <p style="font-size: 20px;">If you are not available 24 hours from now to complete Part 2, please exit the experiment now.</p>
+                    </div>
+                `,
+                choices: ['I am available in 24 hours to complete Part 2'],
+                post_trial_gap: 300,
+                on_start: function(trial) {
+                    // Create a unique identifier for this trial
+                    trial.data = {
+                        button_id: 'availability-button'
+                    };
+                },
+                on_load: function() {
+                    // Target only this specific button and style it
+                    const button = document.querySelector('.jspsych-btn');
+                    if (button) {
+                        button.id = 'availability-button';
+                        button.style.backgroundColor = 'yellow';
+                        button.style.fontSize = '24px';
+                        button.style.padding = '15px 30px';
+                    }
+                }
+            };
+            timeline.push(confirm_avail);
+
+            // Task details continued
+            var welcome2 = {
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container" style="max-width: 800px; margin: 0 auto; line-height: 1.6;">
+                        <div style="background-color: #f5f5f5; border-left: 4px solid #e0e0e0; padding: 15px; margin-bottom: 20px;">
+                            <p style="font-size: 20px; margin-bottom: 15px;">
+                                As stated in the consent form, you may not be invited to participate in tomorrow's study session based on your performance today. In some cases, researchers may determine that your responses are ineligible for Part 2, even if you perform well on the task.
+                            </p>
+                            <p style="font-size: 20px; margin-bottom: 15px;">
+                                If this happens, you will still receive compensation for today's session but will not be invited to continue.
+                            </p>
+                            <p style="font-size: 20px; color: #d32f2f; font-weight: 500;">
+                                However, if more than 50% of your responses in Section 2 of today's study are incorrect, your submission will be rejected, and you will not receive compensation.
+                            </p>
+                            <p style="font-size: 20px;">
+                                If you have any questions, please contact the researchers.
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: #e8f5e9; border-left: 4px solid #66bb6a; padding: 15px; margin-bottom: 20px;">
+                            <p style="font-size: 20px; margin-bottom: 10px;">
+                                You will receive a return code at the end of this part.
+                            </p>
+                            <p style="font-size: 22px; font-weight: bold; color: #2e7d32; margin-bottom: 10px;">
+                                You must save this code, as it is required in order to return and complete tomorrow's study part and earn full compensation.
+                            </p>
+                            <p style="font-size: 20px;">
+                                Please save or copy this code once you complete the experiment and save it alongside your username/password received with today's Part 1.
+                            </p>
+                        </div>
+                        
+                        <p style="font-size: 20px; text-align: center; margin-top: 30px;">
+                            Press the button below to continue to the instructions.
+                        </p>
+                    </div>
+                `,
+                choices: ['Continue'],
+                post_trial_gap: 300
+            };
+            timeline.push(welcome2);
+            
+            // Part 1 instructions
+            var p1_instrutions = {
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;">There will be <strong>two sections</strong> in today's task. </p>
+                        <br>
+                        <p style="font-size: 20px;">First, you will be shown trivia questions and asked to rate (1) if you know the answer to them and (2) how curious you are about them. There may be attention questions to ensure you are completing the task honestly. Failure to pass these attention check questions will result in <strong>immediate study termination and no compensation</strong>.</p>
+                        <br>
+                    </div>
+                `,
+                choices: ['Press to begin'],
+                post_trial_gap: 300
+            };
+            timeline.push(p1_instrutions);
+
+            // Trivia trials with conditional logic
+            scrambled_trivia.forEach((trivia, i) => {
+                let trial_data = {
+                    trial: i + 1,
+                    question: trivia.question,
+                    answer: trivia.answer,  // Store answer for later use
+                    confidence_rating: null,
+                    curiosity_rating: null,
+                    trial_label: null
+                };
+
+                // Create a trial group object to hold all components of a single trial
+                let trial_group = {
+                    timeline: [],
+                    conditional_function: function() {
+                        // Only continue if we haven't met both targets
+                        return (high_cur_count < target_count || low_cur_count < target_count);
+                    }
+                };
+
+                // Add all trial components to the trial group
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: '<div style="font-size:80px;">+</div>',
+                    choices: "NO_KEYS",
+                    trial_duration: 1000
+                });
+
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: `
+                        <div style="text-align: center;">
+                            <p style="font-size: 20px; font-weight: bold;">${trivia.question}</p>
+                        </div>
+                    `,
+                    choices: "NO_KEYS",
+                    trial_duration: 2000,
+                    data: trial_data
+                });
+
+                trial_group.timeline.push({
+                    type: jsPsychSurveyLikert,
+                    questions: [
+                        {
+                            prompt: `
+                                <div style="text-align: center; max-width: 800px; margin: auto;">
+                                    <p style="font-size: 20px; font-weight: bold;">${trivia.question}</p>
+                                    <p style="font-size: 16px;">How <strong>confident</strong> are you that you <strong>know</strong> the answer?</p>
+                                </div>
+                            `,
+                            labels: [
+                                `<div style="width: 150px;">1 - I have no idea</div>`,
+                                `<div style="width: 150px;">2</div>`,
+                                `<div style="width: 150px;">3</div>`,
+                                `<div style="width: 150px;">4 - I'm sure I know it</div>`
+                            ],
+                            required: true
+                        }
+                    ],
+                    scale_width: 600, // Fixed width for the scale lines
+                    on_finish: function(data) {
+                        trial_data.confidence_rating = data.response.Q0 + 1;
+                        if (trial_data.confidence_rating === 4) {
+                            trial_data.trial_label = "discarded";
+                        }
+                    }
+                });
+                
+                // Curiosity rating
+                trial_group.timeline.push({
+                    type: jsPsychSurveyLikert,
+                    questions: [
+                        {
+                            prompt: `
+                                <div style="text-align: center; max-width: 800px; margin: auto;">
+                                    <p style="font-size: 20px; font-weight: bold;">${trivia.question}</p>
+                                    <p style="font-size: 16px;">How <strong>curious</strong> are you about the answer?</p>
+                                </div>
+                            `,
+                            labels: [
+                                `<div style="width: 150px;">1 - Not curious at all</div>`,
+                                `<div style="width: 150px;">2</div>`,
+                                `<div style="width: 150px;">3</div>`,
+                                `<div style="width: 150px;">4 - Very curious</div>`
+                            ],
+                            required: true
+                        }
+                    ],
+                    scale_width: 600, // Fixed width for the scale lines
+                    on_finish: function(data) {
+                        trial_data.curiosity_rating = data.response.Q0 + 1;
+                        
+                        // Only add to selected_questions if not already at target count for that category
+                        if (trial_data.trial_label !== "discarded") {
+                            if (trial_data.curiosity_rating <= 2 && low_cur_count < target_count) {
+                                trial_data.trial_label = "low-curiosity";
+                                low_cur_count++;
+                                selected_questions.push({
+                                    question: trivia.question, // Store the question in selected_questions
+                                    answer: trivia.answer,  // Store the answer in selected_questions
+                                    label: "low-curiosity" // Store the curiosity-type in selected_questions
+                                });
+                                console.log("Added low curiosity question:", trivia.question);
+                            } else if (trial_data.curiosity_rating > 2 && high_cur_count < target_count) {
+                                trial_data.trial_label = "high-curiosity";
+                                high_cur_count++;
+                                selected_questions.push({
+                                    question: trivia.question, // Store the question in selected_questions
+                                    answer: trivia.answer,  // Store the answer in selected_questions
+                                    label: "high-curiosity" // Store the curiosity-type in selected_questions
+                                });
+                                console.log("Added high curiosity question:", trivia.question);
+                            } else {
+                                // Explicitly label as "discarded" instead of leaving as null for high/low questions after target count is reached, for ease during data processing and analyses
+                                trial_data.trial_label = "discarded_quota_reached";
+                                console.log("Discarded question due to quota filled:", trivia.question);
+                            }
+                        }
+                        
+                        // Log the current counts
+                        console.log("Current counts - High:", high_cur_count, "Low:", low_cur_count);
+                        console.log("Selected questions array:", selected_questions);
+                        
+                        jsPsych.data.addDataToLastTrial(trial_data);
+                    }
+                });
+                // Push the entire trial group to the timeline
+                timeline.push(trial_group);
+            });
+
+            // End of Section 1, create stimuli for Section 2 (matching images to selected_questions)
+            var end_part1 = {
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <p>You have completed <strong>Section 1</strong>. Press the button below to continue to <strong>Section 2</strong> .</p>
+                `,
+                choices: ['Continue'],
+                on_finish: function() {
+                    console.log("End of Section 1. Selected questions:", selected_questions);
+                    console.log("Number of selected questions:", selected_questions.length);
+
+                    // Shuffle the array of images for random assignment
+                    const shuffled_images = shuffleArray([...all_novel_images]);
+                    
+                    // Pair each selected question with an image
+                    // We need to match the first 96 images (48 high + 48 low curiosity questions)
+                    selected_questions.forEach((question, index) => {
+                        question.image = shuffled_images[index];
+                    });
+                    
+                    // Now selected_questions has questions, answers, curiosity labels, and images
+                    console.log("Questions paired with images:", selected_questions);
+
+                    // Sort and store remaining novel images for NEW images in memory (recog) and decision-making task
+                    const memory_foil_images = shuffled_images.slice(selected_questions.length, selected_questions.length + 32); // Takes the next 32 images after those used for selected questions and assigns them to memory_foil_images
+                    const dm_foil_images = shuffled_images.slice(selected_questions.length + 32, selected_questions.length + 48); // Takes 16 more images (starting from position selected_questions.length + 32) and assigns them to dm_foil_images
+
+                    // Store these in the jsPsych data for later use
+                    jsPsych.data.addProperties({
+                        selected_questions_with_images: selected_questions,
+                        memory_foil_images: memory_foil_images,
+                        dm_foil_images: dm_foil_images
+                    });
+                }
+            };
+            timeline.push(end_part1);
+
+        // Preload images now that you've matched them to the selected_questions
+        function preloadExperimentImages() {
+            // Get images from selected questions
+            const selected_images = selected_questions.map(item => item.image);
+            
+            // Add preload trial
+            timeline.push({
+                type: jsPsychPreload,
+                images: [...selected_images, ...practice_images],
+                on_success: function() {
+                    console.log("Images successfully preloaded");
+                },
+                on_error: function(file) {
+                    console.error("Error loading image:", file);
+                }
+            });
+        }
+
+        // Call the preload function after end_part1
+        timeline.push({
+            type: jsPsychCallFunction,
+            func: preloadExperimentImages
+        });
+
+        // Section 2 (induction & encoding)
+
+            // Section 2 instructions
+            var part2_instructions = {  
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;"><strong>Section 2:</strong> You will now begin Section 2 of today's experiment.</p>
+                        <br>
+                        <p style="font-size: 20px;">In this section, you will (1) learn the answers to just-seen trivia questions and (2) decide whether an abstract object is more <strong>pointy</strong> or more <strong>rounded</strong>. Press the <strong>"J"</strong> key if the object is more pointy. Press the <strong>"K"</strong> key if the object is more rounded.</p>
+                        <br>
+                        <p style="font-size: 20px;"><strong>Your responses are timed</strong>. Please answer as <strong>quickly</strong> and <strong>accurately</strong> as possible. PAY ATTENTION CAREFULLY TO THE CONTENTS ON THE SCREEN! There may be attention questions to ensure you are completing the task honestly. Failure to pass these attention check questions will result in <strong>immediate study termination and no compensation</strong>.</p>
+                        <br>
+                        <p style="font-size: 20px;"><strong>You will first complete 4 practice questions.</strong></p>
+                        <br>
+                    </div>
+                `,
+                choices: ['Press to begin practice section'],
+                post_trial_gap: 300,
+                on_start: function() {
+                    console.log("Starting Section 2 with questions:", selected_questions);
+                }
+            };
+            timeline.push(part2_instructions);
+
+            // preload trial
+            timeline.push({
+                type: jsPsychPreload,
+                images: practice_images,
+                message: 'Loading practice images, please wait...',
+                show_progress_bar: true,
+                continue_after_error: true,
+                on_success: function() {
+                    console.log("Practice images successfully preloaded");
+                },
+                on_error: function(file) {
+                    console.error("Error loading practice image:", file);
+                }
+            });
+
+            // Create practice trials sequence
+            practice_trials.forEach((trivia, i) => {
+                let trial_data = {
+                    trial: i + 1,
+                    question: trivia.question,
+                    trial_type: 'practice_encoding_judgement',
+                    image: trivia.image,
+                    answer: trivia.answer,
+                };
+
+                // Create a trial group for each practice question
+                let trial_group = {
+                    timeline: []
+                };
+
+                // Add fixation cross
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: '<div style="font-size:80px;">+</div>',
+                    choices: "NO_KEYS",
+                    trial_duration: 1000
+                });
+
+                // Show trivia question
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: `
+                        <div style="text-align: center;">
+                            <p style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">${trivia.question}</p>
+                            <!-- Reserved space for the answer -->
+                            <div style="font-size: 20px; margin-top: 20px; min-height: 60px;"></div>
+                        </div>
+                    `,
+                    choices: "NO_KEYS",
+                    trial_duration: 5000,
+                    data: trial_data
+                });
+
+                // Show image and get pointy/rounded judgment
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: `
+                        <div style="margin-bottom: 20px;">
+                            <img src="${trivia.image}" style="max-width:400px; max-height:400px; object-fit:contain;"/>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <p style="font-size: 18px;">Is this object more <strong>pointy</strong> or <strong>rounded</strong>?</p>
+                            <p style="margin-top: 15px;">
+                                <span style="margin-right: 40px;"><strong>Press J: Pointy</strong></span>
+                                <span><strong>Press K: Rounded</strong></span>
+                            </p>
+                        </div>
+                    `,
+                    choices: ['j', 'k', 'J', 'K'],
+                    trial_duration: 4000,
+                    response_ends_trial: true,
+                    data: {
+                        trial: i + 1,
+                        question: trivia.question,
+                        image: trivia.image,
+                        curiosity_label: trivia.label
+                    },
+                    on_finish: function(data) {
+                        if (data.response) {
+                            data.response = data.response.toLowerCase() === 'j' ? 'pointy' : 'rounded';
+                            data.response_time = data.rt;
+                        } else {
+                            data.response = 'no response';
+                            data.response_time = null;
+                        }
+                    }
+                });
+
+                // Show judgement response feedback for remaining time in set encoding time
+                // Dynamically update display time so that each subject gets same encoding time
+                // Subtract response time from 5 second length for trial as a whole to determine feedback display time
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: function() {
+                        const lastTrialData = jsPsych.data.get().last(1).values()[0];
+                        //const chosenResponse = lastTrialData.response;
+                        // Initial colors for both options. 
+                        let pointyColor = 'black';
+                        let roundedColor = 'black';
+
+                        // If response is made within 4000 ms, highlight the chosen option in green
+                        // Only highlight chosen in green if response was made within 4000ms
+                        // Otherwise, highlight both options in red
+                        // Only show green if response was before 4 seconds
+                        if (lastTrialData.rt && lastTrialData.rt < 4000) {
+                            if (lastTrialData.response === 'pointy') {
+                                pointyColor = 'green';
+                            } else if (lastTrialData.response === 'rounded') {
+                                roundedColor = 'green';
+                            }
+                        }
+
+                        return `
+                            <div style="margin-bottom: 20px;">
+                                <img src="${lastTrialData.image}" style="max-width:400px; max-height:400px; object-fit:contain;"/>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <p style="font-size: 18px;">Is this object more <strong>pointy</strong> or <strong>rounded</strong>?</p>
+                                <p style="margin-top: 15px;">
+                                    <span id="pointy-text" style="margin-right: 40px; color: ${pointyColor};"><strong>Press J: Pointy</strong></span>
+                                    <span id="rounded-text" style="color: ${roundedColor};"><strong>Press K: Rounded</strong></span>
+                                </p>
+                            </div>
+                        `;
+                    },
+                    choices: ['j', 'k', 'J', 'K'],
+                    trial_duration: function() {
+                        const lastTrialData = jsPsych.data.get().last(1).values()[0];
+                        if (!lastTrialData.rt) {
+                            return 1000;  // If no response, show for 1 second
+                        }
+                        return 5000 - lastTrialData.rt;  // Otherwise, show for remaining time
+                    },
+                    response_ends_trial: false,
+                    on_load: function() {
+                        // Set timer to turn both options red at 4 seconds if no early response was made
+                        const lastTrialData = jsPsych.data.get().last(1).values()[0];
+                        
+                        // If there was no response or response was after 4s, turn both red
+                        if (!lastTrialData.rt || lastTrialData.rt >= 4000) {
+                            const pointyText = document.getElementById('pointy-text');
+                            const roundedText = document.getElementById('rounded-text');
+                            if (pointyText && roundedText) {
+                                pointyText.style.color = 'red';
+                                roundedText.style.color = 'red';
+                            }
+                        }
+                    },
+                    data: {
+                        task: 'feedback'
+                    }
+                });
+                // Show question again
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: `
+                        <div style="text-align: center;">
+                            <p style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">${trivia.question}</p>
+                            <!-- Reserved space for the answer -->
+                            <div style="font-size: 20px; margin-top: 20px; min-height: 60px;"></div>
+                        </div>
+                    `,
+                    choices: "NO_KEYS",
+                    trial_duration: 2500
+                });
+                // Show answer
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: function() {
+                        return `
+                            <div style="text-align: center;">
+                                <p style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">${trivia.question}</p>
+                                <div style="font-size: 20px; color: green; margin-top: 20px; min-height: 60px;">
+                                    Answer: ${trivia.answer}
+                                </div>
+                            </div>
+                        `;
+                    },
+                    choices: "NO_KEYS",
+                    trial_duration: 3000
+                });
+                // Inter-trial interval
+                trial_group.timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: '',
+                    choices: "NO_KEYS",
+                    trial_duration: 1000
+                });
+
+
+                // Push the trial group to the timeline
+                timeline.push(trial_group);
+            });
+
+            // Add practice completion message inside the function
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <p>You have completed the practice questions.</p>
+                    <p>Press the button below to continue to Section 2.</p>
+                `,
+                choices: ['Continue'],
+                post_trial_gap: 1000,
+                on_finish: function() {
+                    console.log("End of practice. Selected questions:", selected_questions);
+                    console.log("Number of selected questions:", selected_questions.length);
+                    
+                    // Extract image paths from selected questions
+                    const selectedImages = selected_questions.map(item => item.image);
+                    
+                    // Add preload trial for selected question images
+                    timeline.push({
+                        type: jsPsychPreload,
+                        images: selectedImages,
+                        message: 'Loading experiment images, please wait...',
+                        show_progress_bar: true,
+                        continue_after_error: true,
+                        on_success: function() {
+                            console.log("All selected images successfully preloaded");
+                            // Only create part2 trials after successful preload
+                            // IMPORTANT: Set a flag to ensure we only create the trials once
+                            if (!window.part2TrialsCreated) {
+                                window.part2TrialsCreated = true;
+                                create_part2_trials();
+                            }
+                        },
+                        on_error: function(file) {
+                            console.error("Error loading selected image:", file);
+                            // Create trials anyway despite errors
+                            if (!window.part2TrialsCreated) {
+                                window.part2TrialsCreated = true;
+                                create_part2_trials();
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Section 2 trials
+            var create_part2_trials = function() {
+                console.log("Starting create_part2_trials with:", selected_questions);
+                // Create a copy of the selected_questions array to avoid modifying the original
+                // This preserves all properties of each question object (question text, ratings, labels, images, etc.)
+                let scrambled_questions = [...selected_questions];
+                console.log("Scrambled questions copy:", scrambled_questions);
+                
+                // Fisher-Yates (Knuth) shuffle algorithm to randomize the array order
+                // Each array element is a complete question object with all its properties
+                for (let i = scrambled_questions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [scrambled_questions[i], scrambled_questions[j]] = [scrambled_questions[j], scrambled_questions[i]];
+                }
+
+                console.log("About to create trials for each question");
+
+                scrambled_questions.forEach((trivia, i) => {
+                    console.log(`Creating trial ${i+1} for question:`, trivia.question);
+                    let trial_data = {
+                        trial: i + 1,
+                        trial_type: 'encoding_judgement',
+                        question: trivia.question,
+                        image: trivia.image,
+                        answer: trivia.answer,  
+                        curiosity_label: trivia.label,
+                        response: null
+                    };
+
+                    let trial_group = {
+                        timeline: [
+                            // Fixation cross
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: '<div style="font-size:80px;">+</div>',
+                                choices: "NO_KEYS",
+                                trial_duration: 1000
+                            },
+                            // Show trivia question
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: `
+                                    <div style="text-align: center;">
+                                        <p style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">${trivia.question}</p>
+                                        <!-- Reserved space for the answer -->
+                                        <div style="font-size: 20px; margin-top: 20px; min-height: 60px;"></div>
+                                    </div>
+                                `,
+                                choices: "NO_KEYS",
+                                trial_duration: 5000,
+                                data: {
+                                    trial: i + 1,
+                                    question: trivia.question,
+                                    image: trivia.image,
+                                    curiosity_label: trivia.label
+                                }
+                            },
+                            // Show image and get pointy/rounded judgment
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: `
+                                    <div style="margin-bottom: 20px;">
+                                        <img src="${trivia.image}" style="max-width:400px; max-height:400px; object-fit:contain;"/>
+                                    </div>
+                                    <div style="margin-top: 20px;">
+                                        <p style="font-size: 18px;">Is this object more <strong>pointy</strong> or <strong>rounded</strong>?</p>
+                                        <p style="margin-top: 15px;">
+                                            <span style="margin-right: 40px;"><strong>Press J: Pointy</strong></span>
+                                            <span><strong>Press K: Rounded</strong></span>
+                                        </p>
+                                    </div>
+                                `,
+                                choices: ['j', 'k', 'J', 'K'],
+                                trial_duration: 4000,
+                                response_ends_trial: true,
+                                data: {
+                                    trial: i + 1,
+                                    question: trivia.question,
+                                    image: trivia.image,
+                                    curiosity_label: trivia.label
+                                },
+                                on_finish: function(data) {
+                                    if (data.response) {
+                                        data.response = data.response.toLowerCase() === 'j' ? 'pointy' : 'rounded';
+                                        data.response_time = data.rt;
+                                    } else {
+                                        data.response = 'no response';
+                                        data.response_time = null;
+                                    }
+                                }
+                            },
+                            // Show judgment response feedback
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: function() {
+                                    const lastTrialData = jsPsych.data.get().last(1).values()[0];
+                                    //const chosenResponse = lastTrialData.response;
+                                    let pointyColor = 'black';
+                                    let roundedColor = 'black';
+
+                                    if (lastTrialData.rt && lastTrialData.rt <= 4000) {
+                                        if (lastTrialData.response === 'pointy') {
+                                            pointyColor = 'green';
+                                        } else if (lastTrialData.response === 'rounded') {
+                                            roundedColor = 'green';
+                                        }
+                                    }
+
+                                    return `
+                                        <div style="margin-bottom: 20px;">
+                                            <img src="${trivia.image}" style="max-width:400px; max-height:400px; object-fit:contain;"/>
+                                        </div>
+                                        <div style="margin-top: 20px;">
+                                            <p style="font-size: 18px;">Is this object more <strong>pointy</strong> or <strong>rounded</strong>?</p>
+                                            <p style="margin-top: 15px;">
+                                                <span id="pointy-text" style="margin-right: 40px; color: ${pointyColor};"><strong>Press J: Pointy</strong></span>
+                                                <span id="rounded-text" style="color: ${roundedColor};"><strong>Press K: Rounded</strong></span>
+                                            </p>
+                                        </div>
+                                    `;
+                                },
+                                choices: ['j', 'k', 'J', 'K'],
+                                trial_duration: function() {
+                                    const lastTrialData = jsPsych.data.get().last(1).values()[0];
+                                    if (!lastTrialData.rt) {
+                                        return 1000;  // If no response, show for 1 second
+                                    }
+                                    return 5000 - lastTrialData.rt;  // Otherwise, show for remaining time
+                                },
+                                response_ends_trial: false,
+                                on_load: function() {
+                                    // Set timer to turn both options red at 4 seconds if no early response was made
+                                    const lastTrialData = jsPsych.data.get().last(1).values()[0];
+                                    
+                                    // If there was no response or response was after 4s, turn both red
+                                    if (!lastTrialData.rt || lastTrialData.rt >= 4000) {
+                                        const pointyText = document.getElementById('pointy-text');
+                                        const roundedText = document.getElementById('rounded-text');
+                                        if (pointyText && roundedText) {
+                                            pointyText.style.color = 'red';
+                                            roundedText.style.color = 'red';
+                                        }
+                                    }
+                                },
+                                data: {
+                                    task: 'feedback'
+                                }
+                            },
+                            // Show question again
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: `
+                                    <div style="text-align: center;">
+                                        <p style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">${trivia.question}</p>
+                                        <!-- Reserved space for the answer -->
+                                        <div style="font-size: 20px; margin-top: 20px; min-height: 60px;"></div>
+                                    </div>
+                                `,
+                                choices: "NO_KEYS",
+                                trial_duration: 2500
+                            },
+                            // Show answer
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: function() {
+                                    return `
+                                        <div style="text-align: center;">
+                                            <p style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">${trivia.question}</p>
+                                            <div style="font-size: 20px; color: green; margin-top: 20px; min-height: 60px;">
+                                                Answer: ${trivia.answer}
+                                            </div>
+                                        </div>
+                                    `;
+                                },
+                                choices: "NO_KEYS",
+                                trial_duration: 3000
+                            },
+                            // Inter-trial interval
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: '',
+                                choices: "NO_KEYS",
+                                trial_duration: 1000
+                            }
+                        ]
+                    };
+                    timeline.push(trial_group);
+                    console.log(`Added trial ${i+1} to timeline`);
+                });
+
+                // Create a final screen with expiring password (Sam Rosenthal method) https://github.com/srosenthalUofC/Expiring-Password
+                var final_trial = {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: function() {
+                        exp_password = generatePassword("triviafun", 1440); // make sure this is set to ("triviafun", 1440) for actual study; 1440 minutes = 24 hours
+                        
+                        // Store the password in jsPsych data
+                        jsPsych.data.addProperties({
+                            exp_password: exp_password
+                        });
+
+                        return `
+                        <div style="width: 800px; margin: 0 auto; text-align: center;">
+                            <h2>Thank you for completing Part 1 of our study!</h2>
+                            
+                            <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 5px;">
+                            <p><strong>IMPORTANT:</strong> To participate in Part 2, you will need the following return code:</p>
+                            <p style="font-size: 24px; font-weight: bold; color: #d9534f; letter-spacing: 1px;">${exp_password}</p>
+                            <p>Please write down or save this return code carefully. You will not be able to finish this experiment without it.</p>
+                            <p>You will need to enter this return code when you access Part 2, which should be done 
+                                <strong>24 hours</strong> from now (within a 2-hour window). You will not be allowed to complete Part 2 outside of this time window.</p>
+                            </div>
+
+                            <p>Please click the link below to prove that you have completed Part 1 of the study. You will be redirected to Prolific. <strong>Then, please return to this window and click the <strong>submit</strong> button to submit your responses and complete the study</strong>.</p>
+                            <p><a href="https://app.prolific.com/submissions/complete?cc=C14REOT5" target="_blank">Click this link, then return to this window</a></p>
+                            <p>We appreciate your participation and look forward to seeing you for Part 2!</p>
+                        </div>
+                        `;
+                    },
+                    choices: ['Submit responses'],
+                        data: function() {
+                            return {
+                                exp_password: exp_password,
+                                password_timestamp: new Date().toString(),
+                                is_final_trial: true  // Add this flag to identify this as the final trial
+                            };
+                        },
+                        on_finish: function() {
+                            // End the experiment by clearing the timeline
+                            jsPsych.data.addProperties({experiment_complete: true});
+                            
+                            // This will make jsPsych think there are no more trials to run
+                            jsPsych.finishTrial();
+                            
+                            // Exit fullscreen if needed
+                            if (document.fullscreenElement) {
+                                document.exitFullscreen().catch(err => console.error('Error exiting fullscreen:', err));
+                            }
+                        },
+                        post_trial_gap: 500
+                };
+
+                // Add the final trial to your timeline
+                timeline.push(final_trial); 
+        }
+
+        //create_part2_trials();
+
+        // Run the experiment
+        jsPsych.run(timeline);
+
+    </script>
+</html>

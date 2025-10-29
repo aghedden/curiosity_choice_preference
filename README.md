@@ -23,6 +23,19 @@ Participants complete the following tasks:
 This phase allows researchers to assess how curiosity affects both memory performance and decision-making preferences.
 
 
+## Analysis Scripts
+
+### `curiosity_pref_analyses.ipynb`
+**Main analyses script for curiosity project**
+
+- Runs through basic participant sumamry stats (age, race, etc.)
+- Performs exploratory analyses on mean accuracies, general choice preferences, and distributions of various variables
+- Performs the following main analyses:
+ - Mixed-effects logistic regressions with outcome variable of image recognition/trivia recall accuracy, predictor variables curiosity and reaction time during initial encoding, random intercepts for subject, and random slopes for curiosity type
+ - Mixed-effects logistic regression with outcome variable of P choose right, predictor variables (R-L), the difference in appeal between right and left image, the difference in familiarity between right and left image, the difference in interest between right and left image, and the interaction between R-L and the difference in appeal between right and left image. Random intercepts for subject and random slopes for R-L
+- Creats visualizations to illustrate data trends, including violin/swarm overlay plot and regression plots with sigmoidal curves 
+
+
 ## Helper Scripts
 
 ### `clean_part1_data`
@@ -41,3 +54,10 @@ This phase allows researchers to assess how curiosity affects both memory perfor
 - Each password includes the participant's **subject ID**
 - For example, FM4KL2PIL124 may be the password for the participant with the subject ID **PIL124** *(FM4KL2**PIL124**)*
 - Ensures that the proper stimuli are pulled into Part 2 for the given participant
+
+
+### `det_mem_task_order.ipynb` 
+**Utility for Task Order**
+- Shuffles and splits the subject ids to randomly assign participants to each task order
+- The output of this script is plugged into the task code for Part 2, telling jspsych what order to present that tasks to that participant in based on their subject id 
+ 

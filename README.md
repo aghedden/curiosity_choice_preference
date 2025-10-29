@@ -12,6 +12,8 @@ Participants complete an initial screening task in which they rate a series of t
 
 From these ratings, a subject-specific set of 48 **high-curiosity** and 48 **low-curiosity** trivia questions is generated. Participants then view these selected questions again, each paired with a **perceptually novel object**, presented under either high- or low-curiosity conditions. After viewing the object, they are shown the correct trivia answer.
 
+Note: `original_cognition_part_1` contains the same task, just in txt format to easily load into Cognition.run, which already contains HTML and CSS components and is, thus, no needed in the task code itself.
+
 ### `memory_choice_task`
 **Part 2: Memory and Decision-Making** (24-hour delay between study parts)
 
@@ -22,6 +24,7 @@ Participants complete the following tasks:
 
 This phase allows researchers to assess how curiosity affects both memory performance and decision-making preferences.
 
+Note: `original_cognition_part_2` contains the same task, just in txt format to easily load into Cognition.run, which already contains HTML and CSS components and is, thus, no needed in the task code itself.
 
 ## Analysis Scripts
 

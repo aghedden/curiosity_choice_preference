@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Combined Experiment Task</title>
+        <script src="jspsych/jspsych/jspsych.js"></script>
+        <script src="jspsych/jspsych/plugin-html-keyboard-response.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-likert.js"></script>
+        <script src="jspsych/jspsych/plugin-html-button-response.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-html-form.js"></script> 
+        <script src="jspsych/jspsych/plugin-survey.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-multi-choice.js"></script>
+        <script src="jspsych/jspsych/plugin-survey-multi-select.js"></script>  
+        <script src="jspsych/jspsych/plugin-survey-text.js"></script>
+        <script src="jspsych/jspsych/plugin-image-keyboard-response.js"></script>
+        <script src="jspsych/jspsych/plugin-preload.js"></script>
+        <script src="jspsych/jspsych/plugin-call-function.js"></script>
+        <script src="jspsych/jspsych/plugin-fullscreen.js"></script>
+        <link href="jspsych/jspsych/jspsych.css" rel="stylesheet" type="text/css"/>
+        <style>
+            .content-container {
+                width: 900px;  /* You can adjust this width */
+                margin: 0 auto;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body></body>
+    <script>
+        // // Set style preferences
+        // (function() {
+        // // Add style as soon as the script runs
+        // const styleElement = document.createElement('style');
+        // styleElement.textContent = `
+        //     .content-container {
+        //         width: 900px !important;
+        //         margin: 0 auto !important;
+        //         text-align: center !important;
+        //     }
+        //     /* Also target the jsPsych display element directly */
+        //     #jspsych-display {
+        //         width: 900px !important;
+        //         margin: 0 auto !important;
+        //         text-align: center !important;
+        //     }
+        // `;
+        // document.head.appendChild(styleElement);
+        // })();
+
+        //INITIALIZATION
+        // Initialize jsPsych
+        var jsPsych = initJsPsych({
+            on_finish: function() {
+                const subject_id = jsPsych.data.get().values()[0].subject_id;
+                // Export code commented out - enable if needed
+                // const file_name = `${subject_id}_combined_task_data.csv`;
+                // var full_data = jsPsych.data.get().csv();
+                // var dataElement = document.createElement('a');
+                // dataElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(full_data);
+                // dataElement.target = '_blank';
+                // dataElement.download = file_name;
+                // dataElement.click();
+            },
+            // This records a timestamp at the beginning of each trial
+            on_trial_start: function() {
+                const currentTime = new Date();
+                jsPsych.data.addDataToLastTrial({
+                    date: currentTime.toLocaleDateString(),
+                    time: currentTime.toLocaleTimeString(),
+                    timestamp: currentTime.getTime()
+                });
+            },
+            // add timestamps to data
+            on_data_update: function(data) {
+                // Add date and time to each trial
+                const currentTime = new Date();
+                data.date = currentTime.toLocaleDateString();
+                data.time = currentTime.toLocaleTimeString();
+                data.timestamp = currentTime.getTime(); // milliseconds since January 1, 1970
+            }
+        });
+        
+        // Initialize timeline
+        var timeline = [];
+        
+        // Generate random completion code
+        function generateCompletionCode() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return code;
+        }
+        const completion_code = generateCompletionCode();
+        
+        
+        ////// TASK ORDER DETERMINATION
+        // Define the condition assignment
+        const conditionAssignment = {
+            'choice-recall-recognition': ['PNT104', 'PNT105', 'PNT106', 'PNT107', 'PNT108', 'PNT109', 'PNT110', 'PNT140', 'PNT143', 'PNT131', 'PNT136', 'PNT129', 'PNT099', 'PNT031', 'PNT016', 'PNT035', 'PNT092', 'PNT018', 'PNT046', 'PNT015', 'PNT057', 'PNT033', 'PNT074', 'PNT084', 'PNT095', 'PNT048', 'PNT006', 'PNT043', 'PNT063', 'PNT001', 'PNT022', 'PNT096', 'PNT053', 'PNT021', 'PNT030', 'PNT025', 'PNT085', 'PIL036', 'PIL026', 'PIL017', 'PIL040', 'PIL035', 'PIL008', 'PIL005', 'PIL003', 'PIL002', 'PIL029', 'PIL015', 'PIL011', 'PIL044','PIL082', 'PIL089', 'PIL071', 'PIL057', 'PIL069', 'PIL090', 'PIL073', 'PIL059', 'PIL051', 'PIL077', 'PIL093', 'PIL085', 'PIL062','PIL133', 'PIL116', 'PIL106', 'PIL147', 'PIL105', 'PIL144', 'PIL123', 'PIL109', 'PIL135', 'PIL104', 'PIL125', 'PIL122', 'PIL140'],
+            'choice-recognition-recall': ['PNT119', 'PNT120', 'PNT121', 'PNT122', 'PNT123', 'PNT124', 'PNT125', 'PNT126', 'PNT127', 'PNT128', 'PNT134', 'PNT141', 'PNT138', 'PNT135', 'PNT142', 'PNT055', 'PNT058', 'PNT082', 'PNT040', 'PNT064', 'PNT088', 'PNT017', 'PNT076', 'PNT065', 'PNT038', 'PNT071', 'PNT097', 'PNT023', 'PNT042', 'PNT068', 'PNT034', 'PNT045', 'PNT054', 'PNT061', 'PNT070', 'PNT051', 'PNT052', 'PNT059', 'PNT049', 'PNT013', 'PIL049', 'PIL050', 'PIL001', 'PIL041', 'PIL009', 'PIL010', 'PIL047', 'PIL045', 'PIL037', 'PIL014', 'PIL039', 'PIL043', 'PIL028','PIL063', 'PIL070', 'PIL095', 'PIL067', 'PIL078', 'PIL084', 'PIL087', 'PIL056', 'PIL096', 'PIL074', 'PIL061', 'PIL076', 'PIL066','PIL127', 'PIL103', 'PIL129', 'PIL136', 'PIL137', 'PIL142', 'PIL130', 'PIL146', 'PIL150', 'PIL143', 'PIL149', 'PIL101', 'PIL139'],
+            'recall-recognition-choice': ['PNT111', 'PNT112', 'PNT113', 'PNT114', 'PNT115', 'PNT116', 'PNT117', 'PNT118', 'PNT130', 'PNT147', 'PNT148', 'PNT133', 'PNT144', 'PNT020', 'PNT010', 'PNT009', 'PNT078', 'PNT036', 'PNT028', 'PNT044', 'PNT056', 'PNT008', 'PNT079', 'PNT027', 'PNT066', 'PNT100', 'PNT007', 'PNT086', 'PNT047', 'PNT073', 'PNT050', 'PNT037', 'PNT062', 'PNT067', 'PNT026', 'PNT024', 'PNT029', 'PNT094', 'PIL018', 'PIL027', 'PIL025', 'PIL004', 'PIL007', 'PIL016', 'PIL034', 'PIL033', 'PIL046', 'PIL032', 'PIL012', 'PIL019','PIL086', 'PIL075', 'PIL072', 'PIL099', 'PIL094', 'PIL058', 'PIL098', 'PIL052', 'PIL080', 'PIL092', 'PIL054', 'PIL053','PIL132', 'PIL126', 'PIL118', 'PIL110', 'PIL114', 'PIL111', 'PIL115', 'PIL117', 'PIL148', 'PIL131', 'PIL128', 'PIL134'],
+            'recognition-recall-choice': ['PNT101', 'PNT102', 'PNT103', 'PNT137', 'PNT146', 'PNT139', 'PNT145', 'PNT132', 'PNT091', 'PNT081', 'PNT093', 'PNT041', 'PNT083', 'PNT032', 'PNT002', 'PNT087', 'PNT077', 'PNT011', 'PNT019', 'PNT004', 'PNT098', 'PNT080', 'PNT089', 'PNT060', 'PNT075', 'PNT090', 'PNT072', 'PNT014', 'PNT012', 'PNT005', 'PNT039', 'PNT003', 'PNT069', 'PIL030', 'PIL006', 'PIL022', 'PIL048', 'PIL021', 'PIL031', 'PIL023', 'PIL013', 'PIL038', 'PIL042', 'PIL020', 'PIL024','PIL091', 'PIL064', 'PIL097', 'PIL081', 'PIL083', 'PIL055', 'PIL060', 'PIL079', 'PIL068', 'PIL100', 'PIL088', 'PIL065','PIL112', 'PIL141', 'PIL102', 'PIL138', 'PIL124', 'PIL113', 'PIL107', 'PIL121', 'PIL108', 'PIL145', 'PIL120', 'PIL119'],
+        };
+        
+        // For memory task internal ordering
+        const recog_first = ['PNT101', 'PNT102', 'PNT103', 'PNT119', 'PNT120', 'PNT121', 'PNT122', 'PNT123', 'PNT124', 'PNT125', 'PNT126', 'PNT127', 'PNT128', 'PNT134', 'PNT141', 'PNT138', 'PNT135', 'PNT142', 'PNT137', 'PNT146', 'PNT139', 'PNT145', 'PNT132', 'PNT055', 'PNT058', 'PNT082', 'PNT040', 'PNT064', 'PNT088', 'PNT017', 'PNT076', 'PNT065', 'PNT038', 'PNT071', 'PNT097', 'PNT023', 'PNT042', 'PNT068', 'PNT034', 'PNT045', 'PNT054', 'PNT061', 'PNT070', 'PNT051', 'PNT052', 'PNT059', 'PNT049', 'PNT013', 'PNT091', 'PNT081', 'PNT093', 'PNT041', 'PNT083', 'PNT032', 'PNT002', 'PNT087', 'PNT077', 'PNT011', 'PNT019', 'PNT004', 'PNT098', 'PNT080', 'PNT089', 'PNT060', 'PNT075', 'PNT090', 'PNT072', 'PNT014', 'PNT012', 'PNT005', 'PNT039', 'PNT003', 'PNT069', 'PIL049', 'PIL050', 'PIL001', 'PIL041', 'PIL009', 'PIL010', 'PIL047', 'PIL045', 'PIL037', 'PIL014', 'PIL039', 'PIL043', 'PIL028', 'PIL030', 'PIL006', 'PIL022', 'PIL048', 'PIL021', 'PIL031', 'PIL023', 'PIL013', 'PIL038', 'PIL042', 'PIL020', 'PIL024','PIL063', 'PIL070', 'PIL095', 'PIL067', 'PIL078', 'PIL084', 'PIL087', 'PIL056', 'PIL096', 'PIL074', 'PIL061', 'PIL076', 'PIL066', 'PIL091', 'PIL064', 'PIL097', 'PIL081', 'PIL083', 'PIL055', 'PIL060', 'PIL079', 'PIL068', 'PIL100', 'PIL088', 'PIL065','PIL127', 'PIL103', 'PIL129', 'PIL136', 'PIL137', 'PIL142', 'PIL130', 'PIL146', 'PIL150', 'PIL143', 'PIL149', 'PIL101', 'PIL139', 'PIL112', 'PIL141', 'PIL102', 'PIL138', 'PIL124', 'PIL113', 'PIL107', 'PIL121', 'PIL108', 'PIL145', 'PIL120', 'PIL119'];
+        const recog_second = ['PNT104', 'PNT105', 'PNT106', 'PNT107', 'PNT108', 'PNT109', 'PNT110', 'PNT111', 'PNT112', 'PNT113', 'PNT114', 'PNT115', 'PNT116', 'PNT117', 'PNT118', 'PNT140', 'PNT143', 'PNT131', 'PNT136', 'PNT129', 'PNT130', 'PNT147', 'PNT148', 'PNT133', 'PNT144', 'PNT099', 'PNT031', 'PNT016', 'PNT035', 'PNT092', 'PNT018', 'PNT046', 'PNT015', 'PNT057', 'PNT033', 'PNT074', 'PNT084', 'PNT095', 'PNT048', 'PNT006', 'PNT043', 'PNT063', 'PNT001', 'PNT022', 'PNT096', 'PNT053', 'PNT021', 'PNT030', 'PNT025', 'PNT085', 'PNT020', 'PNT010', 'PNT009', 'PNT078', 'PNT036', 'PNT028', 'PNT044', 'PNT056', 'PNT008', 'PNT079', 'PNT027', 'PNT066', 'PNT100', 'PNT007', 'PNT086', 'PNT047', 'PNT073', 'PNT050', 'PNT037', 'PNT062', 'PNT067', 'PNT026', 'PNT024', 'PNT029', 'PNT094', 'PIL036', 'PIL026', 'PIL017', 'PIL040', 'PIL035', 'PIL008', 'PIL005', 'PIL003', 'PIL002', 'PIL029', 'PIL015', 'PIL011', 'PIL044', 'PIL018', 'PIL027', 'PIL025', 'PIL004', 'PIL007', 'PIL016', 'PIL034', 'PIL033', 'PIL046', 'PIL032', 'PIL012', 'PIL019','PIL082', 'PIL089', 'PIL071', 'PIL057', 'PIL069', 'PIL090', 'PIL073', 'PIL059', 'PIL051', 'PIL077', 'PIL093', 'PIL085', 'PIL062', 'PIL086', 'PIL075', 'PIL072', 'PIL099', 'PIL094', 'PIL058', 'PIL098', 'PIL052', 'PIL080', 'PIL092', 'PIL054', 'PIL053','PIL133', 'PIL116', 'PIL106', 'PIL147', 'PIL105', 'PIL144', 'PIL123', 'PIL109', 'PIL135', 'PIL104', 'PIL125', 'PIL122', 'PIL140', 'PIL132', 'PIL126', 'PIL118', 'PIL110', 'PIL114', 'PIL111', 'PIL115', 'PIL117', 'PIL148', 'PIL131', 'PIL128', 'PIL134'];
+        
+        // Function to determine task order based on subject ID
+        function determineTaskOrder(subject_id) {
+            // Check which condition array contains the subject ID
+            for (const [condition, subjects] of Object.entries(conditionAssignment)) {
+                if (subjects.includes(subject_id)) {
+                    console.log(`Found subject ${subject_id} in condition: ${condition}`);
+                    return condition.split('-');
+                }
+            }
+            // Default order if not found (should not happen with proper validation)
+            console.warn(`Subject ID ${subject_id} not found in condition assignments, using default order`);
+            return ['choice', 'recall', 'recognition'];
+        }
+        
+        // Function to determine memory task order (recognition-recall or recall-recognition)
+        function determineMemoryOrder(subject_id) {
+            if (recog_first.includes(subject_id)) {
+                console.log(`Subject ${subject_id} has recognition FIRST in memory task`);
+                return ['recognition', 'recall'];
+            } else if (recog_second.includes(subject_id)) {
+                console.log(`Subject ${subject_id} has recognition SECOND in memory task`);
+                return ['recall', 'recognition'];
+            } else {
+                console.warn(`Subject ID ${subject_id} not found in memory order lists, using default`);
+                return ['recall', 'recognition'];
+            }
+        }
+        
+        // Function to load participant files (both memory and decision-making stimuli)
+        function loadParticipantFiles(subject_id) {
+            return Promise.all([
+                loadFile(`${subject_id}_mem_stimuli.js`),
+                loadFile(`${subject_id}_dm_stimuli.js`)
+            ]).then(([memSession, dmSession]) => {
+                console.log('Loaded memory session info');
+                console.log('Loaded decision-making session info');
+                
+                // Combine both session infos into one object
+                return {
+                    memory: memSession,
+                    decision: dmSession
+                };
+            });
+        }
+        
+        function loadFile(filename) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = filename;
+                
+                script.onload = () => {
+                    console.log(`Successfully loaded ${filename}`);
+                    if (!window.session_info) {
+                        reject(new Error(`Invalid session info format in ${filename}`));
+                        return;
+                    }
+                    
+                    // Store the session_info in a temporary variable
+                    const sessionData = {...window.session_info};
+                    
+                    // Clear the global session_info to prepare for next file
+                    window.session_info = null;
+                    
+                    resolve(sessionData);
+                };
+                
+                script.onerror = () => {
+                    reject(new Error(`Failed to load ${filename}`));
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Password verification function
+        function checkPassword(text, delayWindow, enteredPassword) {
+            var currentdate = new Date(); 
+            const monthTable = [0,31,28,31,30,31,30,31,31,30,31,30];
+            var numDays = 0;
+        
+            for (let i = 0; i < (currentdate.getUTCMonth()+1); i++) {
+                numDays = (numDays + monthTable[i])
+            }
+        
+            numDays = numDays + currentdate.getUTCDate();
+            var currentMin = currentdate.getUTCMinutes() + (currentdate.getUTCHours()*60) + (numDays*1440);
+            
+            var result = enteredPassword;
+            
+            result = result.replace(/\s+/g, ''); // Removes all spaces in input
+            
+            try {
+                // Check if the text prefix matches
+                var textPart = result.substring(0, text.length);
+                if (textPart !== text) {
+                    alert("Return code incorrect. Please try again with the return code you received in Part 1.");
+                    return false;
+                }
+                
+                // Extract the numeric part
+                var numPart = result.substring(text.length);
+                numPart = parseInt(numPart);
+                
+                // Calculate time difference
+                var timeDiff = currentMin - numPart;
+                
+                // Check time window
+                if (timeDiff < -(parseInt(delayWindow))) {
+                    // Too early
+                    alert("You are too early! You can only complete this experiment approximately 24 hours after completing it yesterday. Please return at the proper time.");
+                    return false;
+                } else if (timeDiff > parseInt(delayWindow)) {
+                    // Too late
+                    alert("You are too late and can no longer finish this experiment, as discussed in Part 1 of the experiment. You can only complete this experiment approximately 24 hours after completing it yesterday. Please exit the experiment now.");
+                    return false;
+                } else {
+                    // Within window
+                    console.log("Return code correct and time window valid");
+                    return true;
+                }
+            } catch(error) {
+                console.log("Error parsing password", error);
+                alert("Return code format is incorrect. Please enter the exact return code you received in Part 1.");
+                return false;
+            }
+        }
+        
+        // Variable to track verification status
+        var password_verified = false;
+        
+        // Password entry trial
+        var time_password_trial = {
+            type: jsPsychSurveyText,
+            questions: [
+                {prompt: "<h2>Welcome to Part 2 of our Study</h2><p>Please enter the <strong>return code</strong> you received <strong> at the end of</strong> Part 1.<br>Note, this return code is distinct from your unique study username/password, which you will enter on the next page</p>", name: 'password', required: true}
+            ],
+            button_label: "Verify Password",
+            data: {
+                task: 'password_verification'
+            },
+            on_finish: function(data) {
+                // Get the entered password
+                const entered_password = data.response.password;
+                
+                // Verify the password with a 2-hour window (120 minutes for real task, 2 hours) 
+                password_verified = checkPassword("triviafun", 120, entered_password);
+                
+                // Save verification data
+                data.password_entered = entered_password;
+                data.password_valid = password_verified;
+                data.verification_time = new Date().toString();
+                
+                // Add to global data
+                jsPsych.data.addProperties({
+                part2_password_entered: entered_password,
+                part2_password_valid: password_verified,
+                part2_verification_time: new Date().toString()
+                });
+            }
+        };
+        
+        // Conditional branching based on password verification
+        var time_verification_loop = {
+            timeline: [time_password_trial],
+            loop_function: function() {
+                return !password_verified;
+            }
+        };
+        // Add the time-based password verification as the first item in timeline
+        timeline.push(time_verification_loop);
+        
+        // SECOND PASSWORD CHECK - Participant ID validation
+        // Function to validate the password format - add this BEFORE enter_subject_id
+        function validatePassword(input) {
+            // Ensure the password is exactly 12 characters and ends with PIL### (3 digits)
+            const regex = /^.{6}(PNT|PIL|TST)\d{3}$/; // Matches any string exactly 12 chars long ending with PIL### or TST### (3 digits)
+            return regex.test(input);
+        }
+        
+        // Variable to store whether the password is valid
+        let isPasswordValid = false;
+        
+        // Success message after time-based password verification
+        var time_password_success = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <div class="content-container">
+                    <h2>Return Code Verified!</h2>
+                    <p>Thank you for returning at the correct time. Click below to continue.</p>
+                </div>
+            `,
+            choices: ['Continue'],
+            post_trial_gap: 500
+        };
+        timeline.push(time_password_success);
+        
+        // Subject ID entry trial
+        const enter_subject_id = {
+            type: jsPsychSurveyText,
+            questions: [
+                {
+                    prompt: '<strong>Please now enter the username that was provided to you with the study link:',
+                    required: true
+                }
+            ],
+            on_finish: function(data) {
+                const fullInput = data.response.Q0;
+                
+                if (validatePassword(fullInput)) {
+                    const subject_id = fullInput.substring(6);
+                    console.log("Subject ID extracted:", subject_id);
+                    jsPsych.data.addProperties({subject_id: subject_id});
+                    data.subject_id = subject_id;
+                    
+                    // Pause experiment while loading
+                    jsPsych.pauseExperiment();
+                    
+                    // Determine task order based on subject ID
+                    const taskOrder = determineTaskOrder(subject_id);
+                    const memoryOrder = determineMemoryOrder(subject_id);
+                    
+                    loadParticipantFiles(subject_id)
+                        .then(sessionInfo => {
+                            console.log('Loaded all session info');
+                            console.log('Task order:', taskOrder);
+                            console.log('Memory order:', memoryOrder);
+                            
+                            // Log memory stimuli details
+                            console.log('Memory stimuli count:', sessionInfo.memory.stimuli.length);
+                            console.log('Memory new images count:', sessionInfo.memory.new_images.length);
+                            
+                            // Log decision stimuli details
+                            console.log('Decision stimuli count:', sessionInfo.decision.stimuli.length);
+                            console.log('Decision new images count:', sessionInfo.decision.new_images.length);
+                            
+                            // Count high/low curiosity items
+                            const highCuriosityCount = sessionInfo.memory.stimuli.filter(item => 
+                                item.trial_label === 'high-curiosity').length;
+                            const lowCuriosityCount = sessionInfo.memory.stimuli.filter(item => 
+                                item.trial_label === 'low-curiosity').length;
+                            console.log('High curiosity items:', highCuriosityCount);
+                            console.log('Low curiosity items:', lowCuriosityCount);
+        
+                            window.currentSessionInfo = sessionInfo;
+                            isPasswordValid = true;
+                            
+                            // Create experiment timeline with all task components
+                            createExperimentTimeline(
+                                sessionInfo.memory.stimuli,
+                                sessionInfo.memory.new_images,
+                                sessionInfo.decision.stimuli,
+                                sessionInfo.decision.new_images,
+                                taskOrder,
+                                memoryOrder
+                            ); 
+                            
+                            jsPsych.resumeExperiment();
+                        })
+                        .catch(error => {
+                            console.error('Error loading session info:', error);
+                            alert('Could not load participant data. Please check your password and try again. Contact the researcher if the problem persists.');
+                            isPasswordValid = false;
+                            jsPsych.resumeExperiment();
+                        });
+                } else {
+                    isPasswordValid = false;
+                    alert('Invalid password. Please try again. Contact the researcher if the problem persists.');
+                }
+            }
+        };
+        
+        // Password validation loop
+        const id_password_loop = {
+            timeline: [enter_subject_id],
+            loop_function: function() {
+                return !isPasswordValid;
+            }
+        };
+        
+        // Add subject_id password validation to timeline first
+        timeline.push(id_password_loop);
+        
+        // Create the main function that will set up the experiment timeline
+        function createExperimentTimeline(
+            memoryStimuli, 
+            memoryNewImages, 
+            decisionStimuli,
+            decisionNewImages,
+            taskOrder,
+            memoryOrder
+        ) {
+            console.log("Task order:", taskOrder);
+            console.log("Memory order:", memoryOrder);
+            
+            // Prepare all images that need to be preloaded
+            const allMemoryImages = [
+                ...memoryStimuli.map(item => item.image),
+                ...memoryNewImages
+            ];
+            
+            const allDecisionImages = [
+                ...decisionStimuli.map(item => item.image),
+                ...decisionNewImages
+            ];
+            
+            const allImages = [...new Set([...allMemoryImages, ...allDecisionImages])];
+        
+            // Add preload trial as the first thing in the experiment
+            timeline.push({
+                type: jsPsychPreload,
+                message: `<div class="content-container">
+                    <p style="font-size: 20px;">Loading images... please wait.</p>
+                    <p style="font-size: 16px;">This may take a few moments.</p>
+                </div>`,
+                show_progress_bar: true,
+                show_detailed_errors: true,
+                max_load_time: 300000, // 5 minutes
+                images: allImages,
+                on_success: function() {
+                    console.log('Successfully preloaded all images:', allImages.length);
+                },
+                on_error: function(error) {
+                    console.error('Error preloading images:', error);
+                }
+            });
+        
+            // Add welcome instructions
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;">Welcome back to the experiment! There will be <strong>three sections</strong> in today's study part. </p>
+                        <br>
+                        <p style="font-size: 20px;">Your responses are timed, <strong>but your accuracy will NOT affect your compensation</strong>. Please do not attempt to look up correct answers. Please answer as <strong>quickly</strong> and <strong>accurately</strong> as possible. There may be attention check questions to ensure you are completing the task honestly. Failure to pass these attention check questions will result in <strong>immediate study termination and no compensation</strong>.</p>
+                        <br>
+                    </div>
+                `,
+                choices: ['Click to begin'],
+                post_trial_gap: 300
+            });
+        
+            // Add fullscreen mode
+            timeline.push({
+                type: jsPsychFullscreen,
+                fullscreen_mode: true,
+                message: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;"><strong>
+                            You must complete this task in <strong>fullscreen mode</strong>.
+                        </strong></p>
+                        <p style="font-size: 20px;">
+                            The study will automatically exit fullscreen mode once this task 
+                            is complete.
+                        </p>
+                        <p style="font-size: 20px;">
+                            Click on the button below to enter fullscreen mode and begin the experiment.
+                        </p>
+                    </div>
+                `,
+                button_label: "Enter fullscreen"
+            });
+        
+            // Add data about task order
+            jsPsych.data.addProperties({
+                task_order: taskOrder.join('-'),
+                memory_order: memoryOrder.join('-')
+            });
+        
+            // Process the memory stimuli
+            const memQuestions = memoryStimuli.map(item => ({
+                question: item.question,
+                answer: item.answer,
+                image: item.image,
+                label: item.trial_label
+            }));
+        
+            // Shuffle and split memory stimuli for different task parts
+            // Split stimuli by curiosity type first
+            const highCuriosityItems = memQuestions.filter(item => item.label === 'high-curiosity');
+            const lowCuriosityItems = memQuestions.filter(item => item.label === 'low-curiosity');
+            
+            // Shuffle each curiosity type separately
+            const shuffledHighCuriosity = jsPsych.randomization.shuffle([...highCuriosityItems]);
+            const shuffledLowCuriosity = jsPsych.randomization.shuffle([...lowCuriosityItems]);
+        
+            // Split each curiosity type in half
+            const highCuriosityHalfway = Math.floor(shuffledHighCuriosity.length / 2);
+            const lowCuriosityHalfway = Math.floor(shuffledLowCuriosity.length / 2);
+            
+            // Assign to recall and recognition tasks
+            const recall_stim = [
+                ...shuffledHighCuriosity.slice(0, highCuriosityHalfway),
+                ...shuffledLowCuriosity.slice(0, lowCuriosityHalfway)
+            ];
+            
+            const recog_stim = [
+                ...shuffledHighCuriosity.slice(highCuriosityHalfway),
+                ...shuffledLowCuriosity.slice(lowCuriosityHalfway)
+            ];
+            
+            // Shuffle within each task to mix high and low curiosity items
+            const shuffled_recall_stim = jsPsych.randomization.shuffle(recall_stim);
+            const shuffled_recog_stim = jsPsych.randomization.shuffle(recog_stim);
+        
+            // const shuffledQuestions = jsPsych.randomization.shuffle([...memQuestions]);
+            // const halfway = Math.floor(shuffledQuestions.length / 2);
+            // const recall_stim = shuffledQuestions.slice(0, halfway);
+            // const recog_stim = shuffledQuestions.slice(halfway);
+        
+            // Process decision stimuli
+            const choiceStimuli = decisionStimuli.map(item => ({
+                image: item.image,
+                label: item.trial_label
+            }));
+        
+            // Create task section functions
+            const createTaskSections = {
+                'choice': function() {
+                    createChoiceTask(choiceStimuli, decisionNewImages);
+                },
+                'recall': function() {
+                    createTriviaStimuliForRecall(recall_stim);
+                },
+                'recognition': function() {
+                    createObjectStimuliForRecognition(recog_stim, memoryNewImages);
+                }
+            };
+        
+            // Define the questionnaire
+            const questionnaire = {
+                type: jsPsychSurveyHtmlForm,
+                html: `
+                    <form>
+                        <div style='color: red; font-size: 16px; text-align: left; margin-top: 40px; margin-bottom: 40px;'><strong>* Required</strong></div>
+                        <div style="margin-bottom: 20px; text-align: left;">
+                            <label style="font-size: 20px; font-weight: bold;">Are you right- or left-handed? <span style='color: red;'>*</span></label><br>
+                            <label><input type="radio" name="handedness" value="Right" required> Right</label><br>
+                            <label><input type="radio" name="handedness" value="Left"> Left</label>
+                        </div>
+                        <div style="margin-bottom: 20px; text-align: left;">
+                            <label style="font-size: 20px; font-weight: bold;">How do you identify your gender? <span style='color: red;'>*</span></label><br>
+                            <label><input type="radio" name="gender" value="male" required> Male</label><br>
+                            <label><input type="radio" name="gender" value="female"> Female</label><br>
+                            <label><input type="radio" name="gender" value="trans_male"> Trans male</label><br>
+                            <label><input type="radio" name="gender" value="trans_female"> Trans female</label><br>
+                            <label><input type="radio" name="gender" value="gender_nonbinary"> Gender nonbinary</label><br>
+                            <label><input type="radio" name="gender" value="genderqueer"> Genderqueer</label><br>
+                            <label>
+                                <input type="radio" name="gender" value="Other"> Different identity:
+                                <input type="text" id="other-gender" name="gender_custom" style="margin-left: 10px;" disabled>
+                            </label>
+                        </div>
+                        <div style="margin-bottom: 20px; text-align: left;">
+                            <label style="font-size: 20px; font-weight: bold;">How old are you in years? <span style='color: red;'>*</span></label>
+                            <input type="text" id="age" name="age" required 
+                                style="width: 100px; padding: 5px; font-size: 16px;">
+                            <div id="age-error" style="color: red; font-size: 14px; margin-top: 10px; display: none;">
+                                You must be between 18 and 35 years old to participate in this experiment.
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 20px; text-align: left;">
+                            <label style="font-size: 20px; font-weight: bold;">What is your ethnic background? (Select one) <span style='color: red;'>*</span></label><br>
+                            <label><input type="radio" name="ethnicity" value="hispanic_yes" required> Hispanic, Latinx, or Spanish origin</label><br>
+                            <label><input type="radio" name="ethnicity" value="hispanic_no"> Not Hispanic, Latinx, or Spanish origin</label><br>
+                        </div>
+                        <div style="margin-bottom: 20px; text-align: left;">
+                            <label style="font-size: 20px; font-weight: bold;">What is your race? (Select all that apply) <span style="color: red;">*</span></label><br>
+                            <label><input type="checkbox" name="race" value="american_indian_alaskan" class="race-checkbox"> American Indian or Alaskan Native </label><br>
+                            <label><input type="checkbox" name="race" value="asian" class="race-checkbox"> Asian</label><br>
+                            <label><input type="checkbox" name="race" value="black" class="race-checkbox"> Black or African American</label><br>
+                            <label><input type="checkbox" name="race" value="hawaiian_pacific_islander" class="race-checkbox"> Native Hawaiian or Other Pacific Islander </label><br>
+                            <label><input type="checkbox" name="race" value="white" class="race-checkbox"> White</label><br>
+                            <label>
+                                <input type="checkbox" id="other-checkbox" name="race" value="Other" class="race-checkbox"> Different identity:
+                                <input type="text" id="other-race" name="race_custom" style="margin-left: 10px;" disabled>
+                            </label>
+                            <div id="race-error" style="color: red; font-size: 14px; margin-top: 10px; display: none;">
+                                Please select at least one option.
+                            </div>
+                        </div>
+                    </form>
+                `,
+                data: {
+                    trial_type: 'demographics_questionnaire'
+                },
+                button_label: 'Submit',
+                on_load: function() {
+                    const submitButton = document.querySelector('.jspsych-btn');
+        
+                    // Validate age
+                    const ageInput = document.getElementById('age');
+                    const ageError = document.getElementById('age-error');
+        
+                    ageInput.addEventListener('input', () => {
+                        const age = parseInt(ageInput.value, 10);
+                        if (!isNaN(age) && (age < 18 || age > 35)) {
+                            ageError.style.display = 'block';
+                        } else {
+                            ageError.style.display = 'none';
+                        }
+                    });
+        
+                    // Handle "Other" for gender
+                    const otherRadio = document.querySelector('input[value="Other"]');
+                    const otherGenderText = document.getElementById('other-gender');
+        
+                    if (otherRadio) {
+                        otherRadio.addEventListener('change', () => {
+                            otherGenderText.disabled = false;
+                            otherGenderText.focus();
+                        });
+        
+                        const allRadios = document.querySelectorAll('input[name="gender"]');
+                        allRadios.forEach(radio => {
+                            if (radio.value !== 'Other') {
+                                radio.addEventListener('change', () => {
+                                    otherGenderText.disabled = true;
+                                    otherGenderText.value = '';
+                                });
+                            }
+                        });
+                    }
+        
+                    // Handle "Other" for race
+                    const otherCheckbox = document.getElementById('other-checkbox');
+                    const raceCheckboxes = document.querySelectorAll('.race-checkbox');
+                    const otherRaceText = document.getElementById('other-race');
+                    const raceError = document.getElementById('race-error');
+        
+                    if (otherCheckbox) {
+                        otherCheckbox.addEventListener('change', () => {
+                            if (otherCheckbox.checked) {
+                                otherRaceText.disabled = false;
+                                otherRaceText.focus();
+                            } else {
+                                otherRaceText.disabled = true;
+                                otherRaceText.value = '';
+                            }
+                        });
+                    }
+        
+                    const validateRaceSelection = () => {
+                        const atLeastOneSelected = Array.from(raceCheckboxes).some(checkbox => checkbox.checked);
+                        raceError.style.display = atLeastOneSelected ? 'none' : 'block';
+                    };
+        
+                    raceCheckboxes.forEach(checkbox => {
+                        checkbox.addEventListener('change', validateRaceSelection);
+                    });
+        
+                    // Updated submit button validation
+                    submitButton.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        
+                        const atLeastOneRace = Array.from(raceCheckboxes).some(checkbox => checkbox.checked);
+                        const age = parseInt(document.getElementById('age').value, 10);
+                        const otherGenderRadio = document.querySelector('input[name="gender"][value="Other"]');
+                        const otherGenderText = document.getElementById('other-gender');
+                        const otherRaceCheckbox = document.getElementById('other-checkbox');
+                        const otherRaceText = document.getElementById('other-race');
+                        
+                        // Validation checks
+                        if (!document.querySelector('input[name="handedness"]:checked')) {
+                            alert("Please complete all required fields.");
+                            return;
+                        }
+                        if (!document.querySelector('input[name="gender"]:checked')) {
+                            alert("Please complete all required fields.");
+                            return;
+                        }
+                        if (isNaN(age) || age < 18 || age > 35) {
+                            alert("Please complete all required fields.");
+                            return;
+                        }
+                        if (!document.querySelector('input[name="ethnicity"]:checked')) {
+                            alert("Please complete all required fields.");
+                            return;
+                        }
+                        if (!atLeastOneRace) {
+                            alert("Please complete all required fields.");
+                            return;
+                        }
+                        if (otherGenderRadio && otherGenderRadio.checked && !otherGenderText.value.trim()) {
+                            alert("Please specify your gender identity in the text field.");
+                            return;
+                        }
+                        if (otherRaceCheckbox && otherRaceCheckbox.checked && !otherRaceText.value.trim()) {
+                            alert("Please specify your racial identity in the text field.");
+                            return;
+                        }
+                        
+                        // Collect form data
+                        const trial_data = {
+                            handedness: document.querySelector('input[name="handedness"]:checked').value,
+                            gender: document.querySelector('input[name="gender"]:checked').value,
+                            gender_custom: document.getElementById('other-gender').value || '',
+                            age: document.getElementById('age').value,
+                            ethnicity: document.querySelector('input[name="ethnicity"]:checked').value,
+                            race: Array.from(document.querySelectorAll('input[name="race"]:checked')).map(cb => cb.value),
+                            race_custom: document.getElementById('other-race').value || ''
+                        };
+        
+                        // Save data and finish trial
+                        jsPsych.data.get().push(trial_data);
+                        jsPsych.finishTrial();
+                    });
+                },
+                on_finish: function(data) {
+                    const formData = {
+                        handedness: document.querySelector('input[name="handedness"]:checked')?.value || '',
+                        gender: document.querySelector('input[name="gender"]:checked')?.value || '',
+                        gender_custom: document.getElementById('other-gender')?.value || '',
+                        age: document.getElementById('age')?.value || '',
+                        ethnicity: document.querySelector('input[name="ethnicity"]:checked')?.value || '',
+                        race: Array.from(document.querySelectorAll('input[name="race"]:checked')).map(cb => cb.value),
+                        race_custom: document.getElementById('other-race')?.value || ''
+                    };
+                    
+                    Object.assign(data, formData);
+                }
+            };
+        
+            // Find if the primary task order is Memory→Choice or Choice→Memory
+            const isMemoryFirst = taskOrder.findIndex(task => task === 'recall' || task === 'recognition') === 0;
+            const isChoiceFirst = taskOrder.findIndex(task => task === 'choice') === 0;
+            
+            // Create a direct mapping of where to place the questionnaire
+            let questPosition = -1;
+        
+            if (isMemoryFirst) {
+                // If memory tasks are first, find the index position after the second memory task
+                let memTasksFound = 0;
+                for (let i = 0; i < taskOrder.length; i++) {
+                    if (taskOrder[i] === 'recall' || taskOrder[i] === 'recognition') {
+                        memTasksFound++;
+                        if (memTasksFound === 2) {
+                            questPosition = i + 1; // Position after second memory task
+                            break;
+                        }
+                    }
+                }
+            } else if (isChoiceFirst) {
+                // If choice task is first, place questionnaire after it
+                questPosition = 1; // Position after first task (choice)
+            }
+        
+            console.log(`Task order: ${taskOrder.join('-')}, questionnaire will be placed after position ${questPosition}`);
+        
+            // Execute tasks in the determined order with the questionnaire at the right place
+            for (let i = 0; i < taskOrder.length; i++) {
+                const currentTask = taskOrder[i];
+                
+                // Add section header
+                timeline.push({
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: `
+                        <div class="content-container">
+                            <p style="font-size: 24px;"><strong>Section ${i+1} of ${taskOrder.length}</strong></p>
+                            <br>
+                        </div>
+                    `,
+                    choices: ['Click to begin'],
+                    post_trial_gap: 1000
+                });
+                
+                // Create and add this task section
+                createTaskSections[currentTask]();
+                
+                // Check if this is where we need to add the questionnaire
+                if (i === questPosition - 1) {
+                    // Add a prompt before the questionnaire
+                    timeline.push({
+                        type: jsPsychHtmlButtonResponse,
+                        stimulus: `
+                            <div class="content-container">
+                                <p style="font-size: 20px;">Before continuing with the experiment, please complete a brief questionnaire.</p>
+                            </div>
+                        `,
+                        choices: ['Click to continue to the questionnaire'],
+                        post_trial_gap: 1000
+                    });
+                    
+                    // Add the questionnaire
+                    timeline.push(questionnaire);
+                    
+                    // Add confirmation after the questionnaire
+                    timeline.push({
+                        type: jsPsychHtmlButtonResponse,
+                        stimulus: `
+                            <div class="content-container">
+                                <p style="font-size: 20px;">Thank you for completing the questionnaire. Please click the button below to continue with the experiment</p>
+                            </div>
+                        `,
+                        choices: ['Continue'],
+                        post_trial_gap: 1000
+                    });
+                }
+                
+                // Add transition between tasks (except after the last task)
+                if (i < taskOrder.length - 1) {
+                    timeline.push({
+                        type: jsPsychHtmlButtonResponse,
+                        stimulus: `
+                            <div class="content-container">
+                                <p style="font-size: 20px;">You have completed Section ${i+1}. Great job!</p>
+                                <br>
+                            </div>
+                        `,
+                        choices: ['Click to continue'],
+                        post_trial_gap: 1000
+                    });
+                }
+            }
+        
+            // Add end questionnaire before the end message
+            const post_exp_questionnaire = {
+                type: jsPsychSurveyHtmlForm,
+                html: `
+                    <div style="width: 90%; margin: auto;">
+                        <h2 style="text-align: center;">Post-Experiment Questionnaire</h2>
+                        <p style="text-align: left; color: red; margin-left: 0px; margin-top: -10px; font-size: 14px;">* Required</p>
+                        
+                        <div class="form-group" style="text-align: left; margin: 20px 0;">
+                            <label for="task_understanding" style="display: block; margin-bottom: 5px;">
+                                What were you supposed to do in this experiment? <span style="color: red;">*</span>
+                            </label>
+                            <textarea name="task_understanding" rows="3" style="width: 100%;" required></textarea>
+                        </div>
+        
+                        <div class="form-group" style="text-align: left; margin: 20px 0;">
+                            <label for="experiment_purpose" style="display: block; margin-bottom: 5px;">
+                                What do you think was being tested in this experiment? <span style="color: red;">*</span>
+                            </label>
+                            <textarea name="experiment_purpose" rows="3" style="width: 100%;" required></textarea>
+                        </div>
+                        
+                        <div class="form-group" style="text-align: left; margin: 20px 0;">
+                            <label for="feedback" style="display: block; margin-bottom: 5px;">
+                                Please leave any feedback about your experience here.
+                            </label>
+                            <textarea name="feedback" rows="3" style="width: 100%;"></textarea>
+                        </div>
+        
+                        <div class="form-group" style="text-align: left; margin: 20px 0;">
+                            <label style="display: block; margin-bottom: 10px;">
+                                How well do you think you did on the tasks, overall? <span style="color: red;">*</span>
+                            </label>
+                            <div style="margin-left: 20px;">
+                                <input type="radio" id="very_well" name="performance_rating" value="Very well" required>
+                                <label for="very_well">Very well</label><br>
+                                
+                                <input type="radio" id="fairly_well" name="performance_rating" value="Fairly well">
+                                <label for="fairly_well">Fairly well</label><br>
+                                
+                                <input type="radio" id="fairly_poorly" name="performance_rating" value="Fairly poorly">
+                                <label for="fairly_poorly">Fairly poorly</label><br>
+                                
+                                <input type="radio" id="poorly" name="performance_rating" value="Poorly">
+                                <label for="poorly">Poorly</label>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                autofocus: 'task_understanding',
+                button_label: 'Submit',
+                on_finish: function(data) {
+                    jsPsych.data.addProperties({
+                        task_understanding: data.response.task_understanding,
+                        experiment_purpose: data.response.experiment_purpose,
+                        feedback: data.response.feedback,
+                        performance_rating: data.response.performance_rating
+                    });
+                }
+            };
+            timeline.push(post_exp_questionnaire);
+        
+            // Exit fullscreen before showing completion message
+            timeline.push({
+                type: jsPsychFullscreen,
+                fullscreen_mode: false,
+                delay_after: 0
+            });
+        
+            /* Display final instructions */
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                <p>Please click the link below to prove that you have completed Part 2 of the study. You will be redirected to Prolific.</p>
+                <p><strong>Then, please return to this window and click the <strong>submit</strong> button to submit your responses and complete the study</strong>.</p>
+                <p><a href="https://app.prolific.com/submissions/complete?cc=C1BJXR1U" target="_blank">Submit your responses</a></p>
+                <p>We appreciate your participation!</p>
+                `,
+                choices: ['Submit responses'],
+                on_finish: function (data) {
+                  data.task = 'experiment_complete';
+                }
+            });
+        };
+        
+        ///// TRIVIA RECALL TASK IMPLEMENTATION
+        function createTriviaStimuliForRecall(recall_stim) {
+            // Add recall instructions
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;">In this section, you will be asked to remember the answers to some of the trivia questions from Part 1 of the experiment. Type the correct answer to the trivia question in the box provided. Please try to be as accurate as possible.</p>
+                    </div>
+                `,
+                choices: ['Click to begin'],
+                post_trial_gap: 1000
+            });
+        
+            // Randomize questions for recall
+            const recall_questions = jsPsych.randomization.shuffle([...recall_stim]);
+        
+            // Log recall questions count
+            console.log("Number of recall questions:", recall_questions.length);
+            console.log("Number of high curiosity recall:", recall_questions.filter(item => item.label === 'high-curiosity').length);
+            console.log("Number of low curiosity recall:", recall_questions.filter(item => item.label === 'low-curiosity').length);
+            
+            // Add recall trials directly to timeline
+            recall_questions.forEach((item, index) => {
+                // Add fixation cross
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: '<div style="font-size:80px;">+</div>',
+                    choices: "NO_KEYS",
+                    trial_duration: 1000
+                });
+        
+                // Add recall trial
+                timeline.push({
+                    type: jsPsychSurveyText,
+                    questions: [
+                        {
+                            prompt: `<p style="font-size: 20px; margin-bottom: 10px;">${item.question}</p>`,
+                            placeholder: "Type your answer here",
+                            required: true
+                        }
+                    ],
+                    data: {
+                        task_type: 'recall',
+                        question_number: index + 1,
+                        question: item.question,
+                        correct_answer: item.answer,
+                        curiosity_label: item.label
+                    },
+                    on_finish: function(data) {
+                        // Save participant's trivia answer response
+                        data.subject_answer = data.response.Q0;
+                    }
+                });
+        
+                // Add feedback showing their response
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: function() {
+                        const last_trial = jsPsych.data.get().last(1).values()[0];
+                        return `
+                            <div style="margin-top: -55px;">
+                                <p style="font-size: 20px; margin-bottom: 10px;">${item.question}</p>
+                                <p style="font-size: 20px; color: blue; margin: 20px 0;">Your response: ${last_trial.response.Q0}</p>
+                            </div>
+                        `;
+                    },
+                    choices: "NO_KEYS",
+                    trial_duration: 1500
+                });
+            });
+        
+            // Add inter-trial interval
+            timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: '<div style="font-size:80px;">+</div>',
+                choices: "NO_KEYS",
+                trial_duration: 1000
+            });
+        }
+        
+        ///// IMAGE RECOGNITION TASK IMPLEMENTATION
+        function createObjectStimuliForRecognition(recog_stim, foil_images) {
+            // Add recognition instructions
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;">In this section, you will be shown a series of images. Some of these are images you saw in Part 1, while others are new. For each image, indicate whether you saw it in Part 1 (OLD) or if it's new (NEW).</p>
+                        <br>
+                        <p style="font-size: 20px;">Press 'J' for <strong>OLD</strong> images you <strong>have</strong> seen before</p>
+                        <p style="font-size: 20px;">Press 'K' for <strong>NEW</strong> images you <strong>have not</strong> seen before</p>
+                        <br>
+                    </div>
+                `,
+                choices: ['Click to begin'],
+                post_trial_gap: 1000
+            });
+        
+            // Create recognition trials using recog_stim (will be 32 images: 16 high, 16 low curiosity)
+            const old_images = recog_stim.map(q => ({
+                image: q.image,
+                type: 'old',
+                curiosity_label: q.label
+            }));
+        
+            // Use all foil images (already 32 images)
+            const new_images = foil_images.map(image => ({
+                image: image,
+                type: 'new',
+                curiosity_label: 'NA'
+            }));
+        
+            // Combine and shuffle all images
+            const recognition_images = jsPsych.randomization.shuffle([...old_images, ...new_images]);
+            
+            console.log("Recognition trials created and shuffled");
+        
+            // Add verification logging
+            console.log("Number of old images:", old_images.length);
+            console.log("Number of high curiosity:", old_images.filter(img => img.curiosity_label === 'high-curiosity').length);
+            console.log("Number of low curiosity:", old_images.filter(img => img.curiosity_label === 'low-curiosity').length);
+            console.log("Number of new images:", new_images.length);
+            console.log("Total recognition trials:", recognition_images.length);
+        
+            // Add recognition trials
+            recognition_images.forEach((item, index) => {
+                // Add fixation cross
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: '<div style="font-size:80px;">+</div>',
+                    choices: "NO_KEYS",
+                    trial_duration: 1000
+                });
+                
+                // Add image preloading for this specific trial
+                timeline.push({
+                    type: jsPsychPreload,
+                    images: [item.image],
+                    auto_preload: true,  
+                    show_progress_bar: true,
+                    continue_after_error: true,
+                    max_load_time: 5000  // 5 seconds per image
+                });
+        
+                // Add image recognition trial
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: `
+                        <div style="margin-bottom: 20px;">
+                            <img src="${item.image}" style="max-width:400px; max-height:400px; object-fit:contain;"/>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <p style="font-size: 18px;">Is this image <strong>old</strong> or <strong>new</strong>?</p>
+                            <p style="margin-top: 15px;">
+                                <span style="margin-right: 40px;"><strong>Press J: OLD</strong></span>
+                                <span><strong>Press K: NEW</strong></span>
+                            </p>
+                        </div>
+                    `,
+                    choices: ['j', 'k', 'J', 'K'],
+                    data: {
+                        task_type: 'recognition',
+                        trial_number: index + 1,
+                        image: item.image,
+                        image_type: item.type, // "old" or "new"
+                        curiosity_label: item.curiosity_label
+                    },
+                    on_finish: function(data) {
+                        // Store the raw response (j or k)
+                        data.key_pressed = data.response;
+                        
+                        // Code response as 'old' or 'new'
+                        data.subject_response = data.response.toLowerCase() === 'j' ? 'old' : 'new';
+                        
+                        // Determine accuracy
+                        data.accuracy = 0;  // default to incorrect
+                        
+                        if (data.image_type === 'new') {  // foil image
+                            if (data.subject_response === 'new') {
+                                data.accuracy = 1;  // correct rejection
+                            }
+                            // else accuracy stays 0 (false alarm)
+                        } else {  // old image
+                            if (data.subject_response === 'old') {
+                                data.accuracy = 1;  // hit
+                            }
+                            // else accuracy stays 0 (miss)
+                        }
+                        
+                        console.log(`Recognition trial ${data.trial_number}: Image type: ${data.image_type}, Response: ${data.subject_response}, Accuracy: ${data.accuracy}`);
+                    }
+                });
+                
+                // Add feedback showing their choice
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: function() {
+                        const last_trial = jsPsych.data.get().last(1).values()[0];
+                        return `
+                            <div style="margin-bottom: 20px;">
+                                <img src="${item.image}" style="max-width:400px; max-height:400px; object-fit:contain;"/>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <p style="font-size: 18px;">Is this image <strong>old</strong> or <strong>new</strong>?</p>
+                                <p style="margin-top: 15px;">
+                                    <span style="margin-right: 40px; color: ${last_trial.key_pressed.toLowerCase() === 'j' ? 'blue' : 'black'};"><strong>Press J: OLD</strong></span>
+                                    <span style="color: ${last_trial.key_pressed.toLowerCase() === 'k' ? 'blue' : 'black'};"><strong>Press K: NEW</strong></span>
+                                </p>
+                            </div>
+                        `;
+                    },
+                    choices: "NO_KEYS",
+                    trial_duration: 1000
+                });
+        
+                // Add inter-trial interval
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: '',
+                    choices: "NO_KEYS",
+                    trial_duration: 1000
+                });
+            });
+        }
+        
+        ///// CHOICE TASK IMPLEMENTATION
+        function createChoiceTask(test_questions, foil_images) {
+            // Add choice task instructions
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div class="content-container">
+                        <p style="font-size: 20px;">In this section, you will see two images and choose which image you prefer using the "J" and "K" keys on your keyboard. Press <strong>"J"</strong> to choose the image on the <strong>left</strong>. Press <strong>"K"</strong> to choose the image on the <strong>right</strong>.</p>
+                        <br>
+                        <p style="font-size: 20px;">Please respond as naturally as possible based on your preference.</p>
+                        <br>
+                    </div>
+                `,
+                choices: ['Click to begin'],
+                post_trial_gap: 1000
+            });
+        
+            // Create your image pairs and trials here
+            const high_curiosity_images = test_questions.filter(q => q.label === 'high-curiosity').map(q => ({
+                src: q.image,
+                label: 'high-curiosity'
+            }));
+            const low_curiosity_images = test_questions.filter(q => q.label === 'low-curiosity').map(q => ({
+                src: q.image,
+                label: 'low-curiosity'
+            }));
+            const new_image_pairs = foil_images.map(image => ({
+                src: image,
+                label: 'new'
+            }));
+        
+            // Create image pairs 
+            // Shuffle images in each category
+            const shuffledHigh = jsPsych.randomization.shuffle(high_curiosity_images);
+            const shuffledLow = jsPsych.randomization.shuffle(low_curiosity_images);
+            const shuffledNew = jsPsych.randomization.shuffle(new_image_pairs);
+        
+            // Number of pairs for each type (change as needed)
+            const numPairs = 8;
+        
+            // Create the pairs
+            const pairs = [];
+        
+            // 1. High-New Pairs
+            for (let i = 0; i < numPairs; i++) {
+                pairs.push({
+                    left: shuffledHigh[i],
+                    right: shuffledNew[i],
+                    type: "high-new"
+                });
+            }
+        
+            // 2. Low-New Pairs
+            for (let i = 0; i < numPairs; i++) {
+                pairs.push({
+                    left: shuffledLow[i],
+                    right: shuffledNew[numPairs + i], // Use the next "new" images
+                    type: "low-new"
+                });
+            }
+        
+            // 3. High-Low Pairs
+            for (let i = 0; i < numPairs; i++) {
+                pairs.push({
+                    left: shuffledHigh[numPairs + i], // Use the next "high" images
+                    right: shuffledLow[numPairs + i], // Use the next "low" images
+                    type: "high-low"
+                });
+            }
+        
+            // Shuffle pairs
+            const shuffledPairs = jsPsych.randomization.shuffle(pairs);
+        
+            // Log for debugging
+            console.log("Final Pairs:", shuffledPairs);
+            console.log("Total Pairs:", shuffledPairs.length);
+            
+            // Create the trials
+            shuffledPairs.forEach(pair => {
+                // Randomize the position of the images
+                const randomizeLeft = Math.random() > 0.5; // 50% chance for each order
+                const leftImage = randomizeLeft ? pair.left : pair.right;
+                const rightImage = randomizeLeft ? pair.right : pair.left;
+                
+                // First add viewing period
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: `
+                        <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 50px;">
+                            <img src='${leftImage.src}' style="max-width:400px; max-height:400px; object-fit:contain;" id='left-img'>
+                            <img src='${rightImage.src}' style="max-width:400px; max-height:400px; object-fit:contain;" id='right-img'>
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <p style="font-size: 20px; visibility: hidden;">Choose which image you prefer</p>
+                            <p style="margin-top: 15px; visibility: hidden;">
+                                <span style="margin-right: 40px;"><strong>Left:</strong> Press "J"</span>
+                                <span><strong>Right:</strong> Press "K"</span>
+                            </p>
+                        </div>
+                    `,
+                    choices: "NO_KEYS",
+                    trial_duration: 2000,
+                    data: {
+                        task_type: 'choice',
+                        trial_phase: 'viewing'
+                    }
+                });
+        
+                // Then add choice period
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: `
+                        <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 50px;">
+                            <img src='${leftImage.src}' style="max-width:400px; max-height:400px; object-fit:contain;" id='left-img'>
+                            <img src='${rightImage.src}' style="max-width:400px; max-height:400px; object-fit:contain;" id='right-img'>
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <p style="font-size: 20px;">Choose which image you prefer</p>
+                            <p style="margin-top: 15px;">
+                                <span style="margin-right: 40px;"><strong>Left:</strong> Press "J"</span>
+                                <span><strong>Right:</strong> Press "K"</span>
+                            </p>
+                        </div>
+                    `,
+                    choices: ["j", "k","J", "K"],
+                    data: {
+                        task_type: 'choice',
+                        trial_phase: 'decision',
+                        left_image: leftImage.src,
+                        right_image: rightImage.src,
+                        left_label: leftImage.label,
+                        right_label: rightImage.label,
+                        pair_type: pair.type,
+                        original_left: randomizeLeft ? "left" : "right",
+                        original_right: randomizeLeft ? "right" : "left"
+                    },
+                    on_finish: function(data) {
+                        // Make the response case-insensitive
+                        const responseKey = data.response.toLowerCase();
+                
+                        const chosenImage = responseKey === "j" ? leftImage.src : rightImage.src;
+                        const unchosenImage = responseKey === "j" ? rightImage.src : leftImage.src;
+                        const chosenLabel = responseKey === "j" ? leftImage.label : rightImage.label;
+                        const unchosenLabel = responseKey === "j" ? rightImage.label : leftImage.label;
+        
+                        data.chosenImage = chosenImage;
+                        data.unchosenImage = unchosenImage;
+                        data.chosenLabel = chosenLabel;
+                        data.unchosenLabel = unchosenLabel;
+                        
+                        console.log(`Choice made: ${data.chosenLabel} (${data.responseKey === "j" ? "left" : "right"}) over ${data.unchosenLabel}, pair type: ${data.pair_type}`);
+                    }
+                });
+        
+                // Add feedback showing their choice
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: function() {
+                        const last_trial = jsPsych.data.get().last(1).values()[0];
+                        const chosenImage = last_trial.chosenImage;
+                        const unchosenImage = last_trial.unchosenImage;
+        
+                        // Get the original stimulus from the last trial
+                        const stimulusHTML = last_trial.stimulus;
+        
+                        // Create a DOM parser to modify the HTML structure
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(stimulusHTML, 'text/html');
+        
+                        // Find all images and add an outline to the chosen one
+                        const images = doc.querySelectorAll('img');
+                        images.forEach(img => {
+                            if (img.src.includes(chosenImage)) {
+                                img.style.outline = "5px solid lime";
+                            }
+                        });
+        
+                        // Return the updated HTML
+                        return doc.body.innerHTML;
+                    },
+                    choices: "NO_KEYS",
+                    trial_duration: 1000,
+                    data: {
+                        task_type: 'choice',
+                        trial_phase: 'feedback'
+                    }
+                });
+        
+                // Add inter-trial interval
+                timeline.push({
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: '<div style="font-size:80px;">+</div>',
+                    choices: "NO_KEYS",
+                    trial_duration: 1000,
+                    data: {
+                        task_type: 'choice',
+                        trial_phase: 'iti'
+                    }
+                });
+            });
+        }
+        
+        // Run the experiment
+        jsPsych.run(timeline);
+
+    </script>
+</html>

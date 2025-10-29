@@ -28,6 +28,17 @@ Note: `original_cognition_part_2` contains the same task, just in txt format to 
 
 ## Analysis Scripts
 
+### `cur_pref_pwr_analyses.ipynb`
+**Power analyses script for curiosity project**
+
+- Several power analyses were run to determine how many people do we needed to test to be confident we can detect this effect
+- The code simulated running the study with different numbers of participants (50, 100, 150, 200 people) to see how many would be needed to reliably find the curiosity effect.
+- Power analyses were run with the object recognition model
+- We tested with the following effect sizes:
+  - Tests with their own pilot data effect size
+  - Tests with smaller effects (to be conservative)
+  - Tests using an effect size from a previous 2014 study by other researchers 
+
 ### `curiosity_pref_analyses.ipynb`
 **Main analyses script for curiosity project**
 

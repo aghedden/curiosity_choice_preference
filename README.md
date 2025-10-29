@@ -31,8 +31,8 @@ This phase allows researchers to assess how curiosity affects both memory perfor
 - Runs through basic participant sumamry stats (age, race, etc.)
 - Performs exploratory analyses on mean accuracies, general choice preferences, and distributions of various variables
 - Performs the following main analyses:
- - Mixed-effects logistic regressions with outcome variable of image recognition/trivia recall accuracy, predictor variables curiosity and reaction time during initial encoding, random intercepts for subject, and random slopes for curiosity type
- - Mixed-effects logistic regression with outcome variable of P choose right, predictor variables (R-L), the difference in appeal between right and left image, the difference in familiarity between right and left image, the difference in interest between right and left image, and the interaction between R-L and the difference in appeal between right and left image. Random intercepts for subject and random slopes for R-L
+  - Mixed-effects logistic regressions with outcome variable of image recognition/trivia recall accuracy, predictor variables curiosity and reaction time during initial encoding, random intercepts for subject, and random slopes for curiosity type
+  - Mixed-effects logistic regression with outcome variable of P choose right, predictor variables (R-L), the difference in appeal between right and left image, the difference in familiarity between right and left image, the difference in interest between right and left image, and the interaction between R-L and the difference in appeal between right and left image. Random intercepts for subject and random slopes for R-L
 - Creats visualizations to illustrate data trends, including violin/swarm overlay plot and regression plots with sigmoidal curves 
 
 
